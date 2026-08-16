@@ -1,0 +1,22 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "your-digital-canvas",
+  "compatibility_date": "2026-08-14",
+  "compatibility_flags": ["nodejs_compat"],
+  "secrets": {
+    "required": ["ADMIN_SESSION_SECRET"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "portfolio_db",
+      "database_id": "dc5a6cca-cc6a-4caf-8361-37f0c4c3d96b"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "portfolio-media"
+    }
+  ]
+}
