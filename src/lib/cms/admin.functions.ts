@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import {
+  faqItemInputSchema,
+  legalPageInputSchema,
   nowItemInputSchema,
   NOW_CATEGORIES,
   pageMetaInputSchema,
@@ -10,6 +12,8 @@ import {
   siteConfigInputSchema,
   type AnalyticsSummary,
   type ContactMessage,
+  type FaqItem,
+  type LegalPage,
   type MediaAsset,
   type NowItem,
   type PageMeta,
@@ -210,6 +214,110 @@ export const updatePageMeta = createServerFn({ method: "POST" })
          ON CONFLICT(page_key) DO UPDATE SET title = excluded.title, description = excluded.description`,
       )
       .bind(data.page_key, data.title, data.description)
+      .run();
+    return { ok: true };
+  });
+
+/* --------------------------------------------------------- faq + legal */
+
+export const adminListFaqItems = createServerFn({ method: "GET" }).handler(
+  async (): Promise<FaqItem[]> => {
+    await checkAuth();
+    const db = await getDb();
+    const { results } = await db
+      .prepare("SELECT * FROM faq_items ORDER BY sort_order ASC, created_at ASC")
+      .all<{
+        id: string;
+        question: string;
+        answer: string;
+        published: number;
+        sort_order: number;
+        created_at: string;
+        updated_at: string;
+      }>();
+    return (results || []).map((row) => ({ ...row, published: Boolean(row.published) }));
+  },
+);
+
+export const upsertFaqItem = createServerFn({ method: "POST" })
+  .validator((input: unknown) =>
+    z.object({ id: z.string().min(1).nullable(), values: faqItemInputSchema }).parse(input),
+  )
+  .handler(async ({ data }) => {
+    await checkAuth();
+    const db = await getDb();
+    const v = data.values;
+
+    if (data.id) {
+      await db
+        .prepare(
+          `UPDATE faq_items SET question = ?, answer = ?, published = ?, sort_order = ?, updated_at = datetime('now')
+          WHERE id = ?`,
+        )
+        .bind(v.question, v.answer, v.published ? 1 : 0, v.sort_order, data.id)
+        .run();
+      return { id: data.id };
+    }
+
+    const id = crypto.randomUUID();
+    await db
+      .prepare(
+        `INSERT INTO faq_items (id, question, answer, published, sort_order, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, datetime('now'), datetime('now'))`,
+      )
+      .bind(id, v.question, v.answer, v.published ? 1 : 0, v.sort_order)
+      .run();
+    return { id };
+  });
+
+export const deleteFaqItem = createServerFn({ method: "POST" })
+  .validator((input: unknown) => idInput.parse(input))
+  .handler(async ({ data }) => {
+    await checkAuth();
+    const db = await getDb();
+    await db.prepare("DELETE FROM faq_items WHERE id = ?").bind(data.id).run();
+    return { ok: true };
+  });
+
+export const reorderFaqItems = createServerFn({ method: "POST" })
+  .validator((input: unknown) => reorderInput.parse(input))
+  .handler(async ({ data }) => {
+    await checkAuth();
+    const db = await getDb();
+    await db.batch(
+      data.ids.map((id, index) =>
+        db.prepare("UPDATE faq_items SET sort_order = ? WHERE id = ?").bind(index, id),
+      ),
+    );
+    return { ok: true };
+  });
+
+export const adminGetLegalPage = createServerFn({ method: "GET" })
+  .validator((input: unknown) => z.object({ pageKey: z.enum(["privacy", "terms"]) }).parse(input))
+  .handler(async ({ data }): Promise<LegalPage> => {
+    await checkAuth();
+    const db = await getDb();
+    const row = await db
+      .prepare("SELECT page_key, title, body_html FROM legal_pages WHERE page_key = ? LIMIT 1")
+      .bind(data.pageKey)
+      .first<{ page_key: string; title: string; body_html: string }>();
+    return row
+      ? { page_key: data.pageKey, title: row.title, body_html: row.body_html }
+      : { page_key: data.pageKey, title: "", body_html: "" };
+  });
+
+export const updateLegalPage = createServerFn({ method: "POST" })
+  .validator((input: unknown) => legalPageInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    await checkAuth();
+    const db = await getDb();
+    const cleanBody = stripInlineColorHtml(data.body_html);
+    await db
+      .prepare(
+        `INSERT INTO legal_pages (page_key, title, body_html) VALUES (?, ?, ?)
+         ON CONFLICT(page_key) DO UPDATE SET title = excluded.title, body_html = excluded.body_html`,
+      )
+      .bind(data.page_key, data.title, cleanBody)
       .run();
     return { ok: true };
   });
@@ -718,6 +826,18 @@ export const listMedia = createServerFn({ method: "GET" })
     return results || [];
   });
 
+const ALLOWED_UPLOAD_MIME_TYPES = new Set([
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "image/gif",
+  "image/avif",
+  "image/svg+xml",
+  "image/x-icon",
+  "image/vnd.microsoft.icon",
+  "application/pdf",
+]);
+
 export const uploadMedia = createServerFn({ method: "POST" })
   .validator((input: unknown) =>
     z
@@ -730,6 +850,17 @@ export const uploadMedia = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     await checkAuth();
+
+    // Allow-list rather than trusting the client-supplied MIME type outright:
+    // uploads served back from /api/media/<path> are same-origin, so an
+    // unrestricted "text/html" or "image/svg+xml" (which can carry <script>)
+    // upload would be a stored-XSS vector against whoever opens the file.
+    if (!ALLOWED_UPLOAD_MIME_TYPES.has(data.mimeType)) {
+      throw new Error(
+        `Unsupported file type "${data.mimeType}". Allowed: PNG, JPEG, WebP, GIF, AVIF, PDF.`,
+      );
+    }
+
     const db = await getDb();
     const r2 = await getR2();
 
@@ -782,6 +913,100 @@ export const deleteMedia = createServerFn({ method: "POST" })
     }
 
     await db.prepare("DELETE FROM media_assets WHERE id = ?").bind(data.id).run();
+    return { ok: true };
+  });
+
+/**
+ * R2 recovery / reconciliation - lists objects directly from the bucket,
+ * independent of the D1 `media_assets` table. Use this if the database was
+ * ever wiped or restored from an older backup: the actual files in R2 are a
+ * separate service from D1 and are untouched by deleting/recreating the
+ * database, so this lets you see and recover anything still sitting there
+ * that the metadata table has forgotten about.
+ */
+export const listR2Objects = createServerFn({ method: "GET" }).handler(
+  async (): Promise<
+    { path: string; size: number; uploaded: string; knownInDb: boolean; url: string }[]
+  > => {
+    await checkAuth();
+    const db = await getDb();
+    const r2 = await getR2();
+
+    const known = new Set<string>();
+    try {
+      const { results } = await db.prepare("SELECT path FROM media_assets").all<{ path: string }>();
+      for (const row of results || []) known.add(row.path);
+    } catch {
+      // media_assets table missing/empty (e.g. after a DB wipe) - everything
+      // in the bucket is then reported as "not yet known in DB".
+    }
+
+    const objects: { path: string; size: number; uploaded: string; knownInDb: boolean; url: string }[] = [];
+    let cursor: string | undefined;
+    do {
+      const listed = await r2.list({ cursor, limit: 1000 });
+      for (const obj of listed.objects) {
+        objects.push({
+          path: obj.key,
+          size: obj.size,
+          uploaded: obj.uploaded.toISOString(),
+          knownInDb: known.has(obj.key),
+          url: `/api/media/${obj.key}`,
+        });
+      }
+      cursor = listed.truncated ? listed.cursor : undefined;
+    } while (cursor);
+
+    objects.sort((a, b) => (a.uploaded < b.uploaded ? 1 : -1));
+    return objects;
+  },
+);
+
+/** Re-create a media_assets row for an R2 object that exists but has no DB record. */
+export const importR2Object = createServerFn({ method: "POST" })
+  .validator((input: unknown) => z.object({ path: z.string().min(1) }).parse(input))
+  .handler(async ({ data }) => {
+    await checkAuth();
+    const db = await getDb();
+    const r2 = await getR2();
+
+    const object = await r2.head(data.path);
+    if (!object) {
+      throw new Error("That object no longer exists in R2 storage.");
+    }
+
+    const existing = await db
+      .prepare("SELECT id FROM media_assets WHERE path = ? LIMIT 1")
+      .bind(data.path)
+      .first<{ id: string }>();
+    if (existing) {
+      return { ok: true, id: existing.id, alreadyImported: true };
+    }
+
+    const id = crypto.randomUUID();
+    const name = data.path.split("/").pop() || data.path;
+    const mimeType = object.httpMetadata?.contentType || "application/octet-stream";
+
+    await db
+      .prepare(
+        "INSERT INTO media_assets (id, name, path, url, mime_type, size_bytes, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      )
+      .bind(id, name, data.path, `/api/media/${data.path}`, mimeType, object.size, object.uploaded.toISOString())
+      .run();
+
+    return { ok: true, id, alreadyImported: false };
+  });
+
+/** Permanently delete an R2 object directly (bypasses the media_assets table). */
+export const deleteR2Object = createServerFn({ method: "POST" })
+  .validator((input: unknown) => z.object({ path: z.string().min(1) }).parse(input))
+  .handler(async ({ data }) => {
+    await checkAuth();
+    const r2 = await getR2();
+    await r2.delete(data.path);
+
+    const db = await getDb();
+    await db.prepare("DELETE FROM media_assets WHERE path = ?").bind(data.path).run();
     return { ok: true };
   });
 

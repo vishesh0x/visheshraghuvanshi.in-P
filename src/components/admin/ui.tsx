@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { cloneElement, isValidElement, useId, type ReactElement, type ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -38,15 +38,39 @@ export function AdminField({
   error?: string | undefined;
   children: ReactNode;
 }) {
+  // Auto-associate the visible label with its control (and the error message,
+  // via aria-describedby) instead of relying on a plain <span> next to an
+  // unlabelled input - screen readers otherwise have no way to connect them.
+  const generatedId = useId();
+  const isElementChild = isValidElement(children);
+  const existingId = isElementChild
+    ? (children as ReactElement<{ id?: string }>).props.id
+    : undefined;
+  const fieldId = existingId || generatedId;
+  const errorId = error ? `${fieldId}-error` : undefined;
+
+  const control = isElementChild
+    ? cloneElement(children as ReactElement<Record<string, unknown>>, {
+        id: fieldId,
+        "aria-invalid": error ? true : undefined,
+        "aria-describedby": errorId,
+      })
+    : children;
 
   return (
     <div>
       <div className="flex items-baseline justify-between gap-3">
-        <span className="label-mono text-muted-foreground">{label}</span>
+        <label htmlFor={fieldId} className="label-mono text-muted-foreground">
+          {label}
+        </label>
         {hint ? <span className="label-mono text-muted-foreground/70">{hint}</span> : null}
       </div>
-      <div className="mt-2">{children}</div>
-      {error ? <p className="label-mono mt-2 text-destructive">{error}</p> : null}
+      <div className="mt-2">{control}</div>
+      {error ? (
+        <p id={errorId} className="label-mono mt-2 text-destructive">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }

@@ -32,6 +32,7 @@ function ResumePage() {
   return (
     <SiteShell config={config}>
       <PageHeader
+        crumbs={[{ label: "Home", to: "/" }, { label: "Resume" }]}
         eyebrow="Document / 03"
         title="Resume"
         description="Composed section by section in the control dashboard, rendered here without a PDF round trip."
@@ -80,46 +81,58 @@ function ResumePage() {
               </div>
 
               <div className="divide-y divide-border">
-                {section.entries.map((entry) => (
-                  <article
-                    key={entry.id}
-                    className="grid gap-4 py-6 sm:grid-cols-[180px_1fr] sm:gap-8"
-                  >
-                    <div>
-                      <p className="label-mono text-foreground">
-                        {entry.start_date}
-                        {entry.end_date ? ` - ${entry.end_date}` : ""}
-                      </p>
-                      {entry.location ? (
-                        <p className="label-mono mt-2 text-muted-foreground">{entry.location}</p>
+                {section.entries.map((entry) => {
+                  const hasDates = Boolean(entry.start_date || entry.end_date);
+                  const hasMeta = hasDates || Boolean(entry.location);
+                  return (
+                    <article
+                      key={entry.id}
+                      className={
+                        hasMeta
+                          ? "grid gap-4 py-6 sm:grid-cols-[180px_1fr] sm:gap-8"
+                          : "py-6"
+                      }
+                    >
+                      {hasMeta ? (
+                        <div>
+                          {hasDates ? (
+                            <p className="label-mono text-foreground">
+                              {entry.start_date}
+                              {entry.end_date ? ` - ${entry.end_date}` : ""}
+                            </p>
+                          ) : null}
+                          {entry.location ? (
+                            <p className="label-mono mt-2 text-muted-foreground">{entry.location}</p>
+                          ) : null}
+                        </div>
                       ) : null}
-                    </div>
-                    <div>
-                      <h3 className="text-base font-semibold text-foreground">{entry.role}</h3>
-                      {entry.organization ? (
-                        <p className="label-mono mt-1.5 text-signal">{entry.organization}</p>
-                      ) : null}
-                      {entry.description ? (
-                        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                          {entry.description}
-                        </p>
-                      ) : null}
-                      {entry.bullets.length > 0 ? (
-                        <ul className="mt-4 space-y-2">
-                          {entry.bullets.map((bullet, index) => (
-                            <li
-                              key={index}
-                              className="relative pl-5 text-sm leading-relaxed text-muted-foreground"
-                            >
-                              <span className="absolute left-0 text-signal">-</span>
-                              {bullet}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : null}
-                    </div>
-                  </article>
-                ))}
+                      <div>
+                        <h3 className="text-base font-semibold text-foreground">{entry.role}</h3>
+                        {entry.organization ? (
+                          <p className="label-mono mt-1.5 text-signal">{entry.organization}</p>
+                        ) : null}
+                        {entry.description ? (
+                          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                            {entry.description}
+                          </p>
+                        ) : null}
+                        {entry.bullets.length > 0 ? (
+                          <ul className="mt-4 space-y-2">
+                            {entry.bullets.map((bullet, index) => (
+                              <li
+                                key={index}
+                                className="relative pl-5 text-sm leading-relaxed text-muted-foreground"
+                              >
+                                <span className="absolute left-0 text-signal">-</span>
+                                {bullet}
+                              </li>
+                            ))}
+                          </ul>
+                        ) : null}
+                      </div>
+                    </article>
+                  );
+                })}
                 {section.entries.length === 0 ? (
                   <p className="label-mono py-6 text-muted-foreground">No entries yet.</p>
                 ) : null}

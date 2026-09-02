@@ -1,9 +1,11 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute, notFound } from "@tanstack/react-router";
 
+import { Breadcrumbs } from "@/components/site/breadcrumbs";
 import { Container, Tag } from "@/components/site/primitives";
 import { SiteShell } from "@/components/site/site-shell";
 import { projectQuery, siteConfigQuery } from "@/lib/cms/queries";
+import { absoluteUrl } from "@/lib/site-url";
 
 export const Route = createFileRoute("/projects/$slug")({
   loader: async ({ context, params }) => {
@@ -15,6 +17,7 @@ export const Route = createFileRoute("/projects/$slug")({
     return {
       title: project.meta_title || project.title,
       summary: project.meta_description || project.summary,
+      cover_url: project.cover_url,
     };
   },
   head: ({ loaderData }) => {
@@ -29,6 +32,13 @@ export const Route = createFileRoute("/projects/$slug")({
         { name: "description", content: loaderData.summary },
         { property: "og:title", content: `${loaderData.title} - Portfolio OS` },
         { property: "og:description", content: loaderData.summary },
+        { property: "og:type", content: "article" },
+        ...(loaderData.cover_url
+          ? [
+              { property: "og:image", content: absoluteUrl(loaderData.cover_url) },
+              { name: "twitter:image", content: absoluteUrl(loaderData.cover_url) },
+            ]
+          : []),
       ],
     };
   },
@@ -57,10 +67,36 @@ function ProjectDetail() {
 
   if (!project) return <ProjectMissing />;
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "CreativeWork",
+    name: project.title,
+    description: project.summary,
+    ...(project.cover_url ? { image: absoluteUrl(project.cover_url) } : {}),
+    ...(project.source_url ? { codeRepository: project.source_url } : {}),
+    dateModified: project.updated_at,
+    author: { "@type": "Person", name: config.owner_name },
+    creator: { "@type": "Person", name: config.owner_name },
+    keywords: project.tags.join(", "),
+    url: absoluteUrl(`/projects/${project.slug}`),
+  };
+
   return (
     <SiteShell config={config}>
+      {/* eslint-disable-next-line react/no-danger */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <div className="border-b border-border">
         <Container className="py-12 sm:py-16">
+          <Breadcrumbs
+            items={[
+              { label: "Home", to: "/" },
+              { label: "Projects", to: "/projects" },
+              { label: project.title },
+            ]}
+          />
           <Link to="/projects" className="label-mono text-muted-foreground hover:text-signal">
             ← Index
           </Link>

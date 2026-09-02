@@ -234,9 +234,10 @@ function ResumeBuilderPage() {
                 }
               />
             </AdminField>
-            <AdminField label="Start" error={errors["start_date"]}>
+            <AdminField label="Start" hint="optional" error={errors["start_date"]}>
               <input
                 className={adminInputClass}
+                placeholder="e.g. 2023 - leave blank for entries with no date (Skills, etc.)"
                 value={editing.values.start_date}
                 onChange={(event) =>
                   setEditing({
@@ -246,9 +247,10 @@ function ResumeBuilderPage() {
                 }
               />
             </AdminField>
-            <AdminField label="End" error={errors["end_date"]}>
+            <AdminField label="End" hint="optional" error={errors["end_date"]}>
               <input
                 className={adminInputClass}
+                placeholder="e.g. Present - leave blank if not applicable"
                 value={editing.values.end_date}
                 onChange={(event) =>
                   setEditing({
@@ -406,10 +408,12 @@ function ResumeBuilderPage() {
                                     {entry.role}
                                     {entry.organization ? ` · ${entry.organization}` : ""}
                                   </p>
-                                  <p className="label-mono mt-1.5 text-muted-foreground">
-                                    {entry.start_date}
-                                    {entry.end_date ? ` - ${entry.end_date}` : ""}
-                                  </p>
+                                  {entry.start_date || entry.end_date ? (
+                                    <p className="label-mono mt-1.5 text-muted-foreground">
+                                      {entry.start_date}
+                                      {entry.end_date ? ` - ${entry.end_date}` : ""}
+                                    </p>
+                                  ) : null}
                                 </div>
                                 <AdminButton
                                   title="Move to previous section"

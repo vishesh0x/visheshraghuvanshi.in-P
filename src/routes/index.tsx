@@ -4,6 +4,7 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import { Container, SectionHeader, Tag } from "@/components/site/primitives";
 import { SiteShell } from "@/components/site/site-shell";
 import { nowQuery, pageMetaQuery, projectsQuery, siteConfigQuery } from "@/lib/cms/queries";
+import { absoluteUrl } from "@/lib/site-url";
 
 export const Route = createFileRoute("/")({
   loader: async ({ context }) => {
@@ -34,8 +35,33 @@ function HomePage() {
   const featured = projects.filter((project) => project.featured).slice(0, 3);
   const list = featured.length > 0 ? featured : projects.slice(0, 3);
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        name: config.system_name,
+        url: absoluteUrl("/"),
+        description: config.bio,
+      },
+      {
+        "@type": "Person",
+        name: config.owner_name,
+        url: absoluteUrl("/"),
+        jobTitle: config.hero_line_one,
+        email: `mailto:${config.contact_email}`,
+        sameAs: config.socials.map((social) => social.url),
+      },
+    ],
+  };
+
   return (
     <SiteShell config={config}>
+      {/* eslint-disable-next-line react/no-danger */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* Hero */}
       <section className="border-b border-border grid-paper">
         <Container className="py-16 sm:py-28">

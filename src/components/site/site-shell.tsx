@@ -61,7 +61,7 @@ export function SiteShell({ config, children }: { config: SiteConfig; children: 
             <span className="label-mono hidden text-foreground sm:inline">{config.system_name}</span>
           </Link>
 
-          <nav className="hidden items-center md:flex">
+          <nav aria-label="Primary" className="hidden items-center md:flex">
             {NAV.map((item) => {
               const active =
                 item.to === "/" ? pathname === "/" : pathname.startsWith(item.to);
@@ -69,6 +69,7 @@ export function SiteShell({ config, children }: { config: SiteConfig; children: 
                 <Link
                   key={item.to}
                   to={item.to}
+                  aria-current={active ? "page" : undefined}
                   className={cn(
                     "label-mono border-l border-border px-4 py-[18px] transition-colors last:border-r",
                     active
@@ -99,7 +100,7 @@ export function SiteShell({ config, children }: { config: SiteConfig; children: 
         </div>
 
         {menuOpen ? (
-          <nav className="border-t border-border md:hidden">
+          <nav aria-label="Mobile" className="border-t border-border md:hidden">
             {NAV.map((item) => (
               <Link
                 key={item.to}
@@ -113,7 +114,7 @@ export function SiteShell({ config, children }: { config: SiteConfig; children: 
         ) : null}
       </header>
 
-      <main>{children}</main>
+      <main id="main-content">{children}</main>
 
       <footer className="border-t border-border">
         <div className="mx-auto grid max-w-[1400px] grid-cols-1 gap-px bg-border sm:grid-cols-2 lg:grid-cols-4">
@@ -160,10 +161,30 @@ export function SiteShell({ config, children }: { config: SiteConfig; children: 
           </div>
         </div>
         <div className="border-t border-border">
-          <div className="mx-auto flex max-w-[1400px] flex-wrap items-center justify-between gap-2 px-6 py-4">
+          <div className="mx-auto flex max-w-[1400px] flex-wrap items-center justify-between gap-3 px-6 py-4">
             <p className="label-mono text-muted-foreground">
               © {new Date().getFullYear()} {config.owner_name}
             </p>
+            <nav aria-label="Legal" className="flex flex-wrap items-center gap-4">
+              <Link
+                to="/faq"
+                className="label-mono text-muted-foreground hover:text-signal"
+              >
+                FAQ
+              </Link>
+              <Link
+                to="/privacy"
+                className="label-mono text-muted-foreground hover:text-signal"
+              >
+                Privacy
+              </Link>
+              <Link
+                to="/terms"
+                className="label-mono text-muted-foreground hover:text-signal"
+              >
+                Terms
+              </Link>
+            </nav>
             <p className="label-mono text-muted-foreground">Self-hosted · Edge-powered</p>
           </div>
         </div>

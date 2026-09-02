@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -11,25 +12,82 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { Toaster } from "../components/ui/sonner";
+import { CookieNotice } from "../components/site/cookie-notice";
 import { siteConfigQuery } from "../lib/cms/queries";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { SITE_URL, absoluteUrl } from "../lib/site-url";
+
+/**
+ * Keeps <link rel="canonical"> in sync with the current route on every
+ * navigation. Canonical URLs prevent duplicate-content issues (e.g. trailing
+ * slashes, query strings) from splitting search ranking across variants.
+ */
+function useCanonicalLink() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  useEffect(() => {
+    const href = absoluteUrl(pathname);
+    let link = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+    if (!link) {
+      link = document.createElement("link");
+      link.rel = "canonical";
+      document.head.appendChild(link);
+    }
+    link.href = href;
+  }, [pathname]);
+}
 
 
 function NotFoundComponent() {
+  useEffect(() => {
+    const previousTitle = document.title;
+    document.title = "Page not found - Portfolio OS";
+
+    let meta = document.head.querySelector<HTMLMetaElement>('meta[name="robots"]');
+    const createdMeta = !meta;
+    if (!meta) {
+      meta = document.createElement("meta");
+      meta.name = "robots";
+      document.head.appendChild(meta);
+    }
+    const previousRobots = meta.content;
+    meta.content = "noindex";
+
+    return () => {
+      document.title = previousTitle;
+      if (meta) {
+        if (createdMeta) meta.remove();
+        else meta.content = previousRobots;
+      }
+    };
+  }, []);
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
-        <h1 className="text-7xl font-bold text-foreground">404</h1>
+        <p className="label-mono text-signal">Error / 404</p>
+        <h1 className="mt-4 text-7xl font-bold text-foreground">404</h1>
         <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          The page you're looking for doesn't exist or has been moved.
+          The page you're looking for doesn't exist or has been moved. Try one of these instead:
         </p>
-        <div className="mt-6">
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
           <Link
             to="/"
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
             Go home
+          </Link>
+          <Link
+            to="/projects"
+            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+          >
+            View projects
+          </Link>
+          <Link
+            to="/contact"
+            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+          >
+            Contact
           </Link>
         </div>
       </div>
@@ -88,7 +146,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         { name: "viewport", content: "width=device-width, initial-scale=1" },
         { name: "author", content: "Portfolio OS" },
         { property: "og:type", content: "website" },
+        { property: "og:site_name", content: config?.site_title ?? "Portfolio OS" },
+        { property: "og:image", content: absoluteUrl("/og-default.png") },
+        { property: "og:image:width", content: "1200" },
+        { property: "og:image:height", content: "630" },
         { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:image", content: absoluteUrl("/og-default.png") },
+        { name: "theme-color", content: "#141414" },
         ...(config
           ? [
               { title: config.site_title },
@@ -111,6 +175,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         config?.favicon_url
           ? { rel: "icon", href: config.favicon_url }
           : { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+        { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+        { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicon-32.png" },
+        { rel: "icon", type: "image/png", sizes: "16x16", href: "/favicon-16.png" },
+        { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },
+        { rel: "manifest", href: "/manifest.json" },
+        { rel: "canonical", href: SITE_URL },
       ],
     };
   },
@@ -128,6 +198,12 @@ function RootShell({ children }: { children: ReactNode }) {
         <HeadContent />
       </head>
       <body>
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:border focus:border-signal focus:bg-background focus:px-4 focus:py-2 focus:font-mono focus:text-xs focus:uppercase focus:tracking-wider focus:text-foreground"
+        >
+          Skip to main content
+        </a>
         {children}
         <Scripts />
       </body>
@@ -137,12 +213,14 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  useCanonicalLink();
 
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
       <Toaster position="bottom-right" />
+      <CookieNotice />
     </QueryClientProvider>
   );
 }

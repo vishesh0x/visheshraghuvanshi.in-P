@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { Breadcrumbs, type Crumb } from "@/components/site/breadcrumbs";
 import { cn } from "@/lib/utils";
 
 export function Container({ children, className }: { children: ReactNode; className?: string }) {
@@ -38,14 +39,17 @@ export function PageHeader({
   eyebrow,
   title,
   description,
+  crumbs,
 }: {
   eyebrow: string;
   title: string;
   description?: string;
+  crumbs?: Crumb[];
 }) {
   return (
     <div className="border-b border-border">
       <Container className="py-14 sm:py-20">
+        {crumbs ? <Breadcrumbs items={crumbs} /> : null}
         <p className="label-mono text-signal">{eyebrow}</p>
         <h1 className="mt-5 max-w-3xl font-mono text-3xl leading-tight tracking-tight text-foreground sm:text-5xl">
           {title}

@@ -179,55 +179,85 @@ export async function signInAdminActionImpl(data: {
   isSignUp?: boolean | undefined;
 }): Promise<{ ok: boolean; message?: string; error?: string }> {
   const db = getD1Database();
+  const email = data.email.toLowerCase();
+
+  // Basic brute-force throttle: block further attempts against this email
+  // after 8 failures in a 15-minute window. Checked before touching
+  // password hashes so a lockout doesn't itself leak timing information.
+  const recentFailures = await db
+    .prepare(
+      "SELECT COUNT(*) as count FROM login_attempts WHERE email = ? AND success = 0 AND created_at > datetime('now', '-15 minutes')",
+    )
+    .bind(email)
+    .first<{ count: number }>()
+    .catch(() => null);
+  if (recentFailures && recentFailures.count >= 8) {
+    return {
+      ok: false,
+      error: "Too many failed attempts. Please wait 15 minutes and try again.",
+    };
+  }
+
+  async function recordAttempt(success: boolean) {
+    try {
+      await db
+        .prepare(
+          "INSERT INTO login_attempts (id, email, success, created_at) VALUES (?, ?, ?, datetime('now'))",
+        )
+        .bind(crypto.randomUUID(), email, success ? 1 : 0)
+        .run();
+    } catch {
+      // Login must still succeed/fail correctly even if attempt logging fails
+      // (e.g. the login_attempts table doesn't exist yet on an older schema).
+    }
+  }
 
   const existingUsers = await db
     .prepare("SELECT COUNT(*) as count FROM admin_users")
     .first<{ count: number }>();
+  const noAdminsYet = existingUsers?.count === 0 || !existingUsers;
 
-  // If first user and signing up
-  if (data.isSignUp && (existingUsers?.count === 0 || !existingUsers)) {
+  // Only an explicit "Register" submission may create the first account.
+  // Plain sign-in attempts against an empty admin_users table used to
+  // silently register whoever tried first - meaning a stranger who reached
+  // /auth before the real owner finished setup could permanently claim the
+  // admin account. Set up your operator account immediately after deploying.
+  if (data.isSignUp && noAdminsYet) {
     const hashed = await hashPassword(data.password);
     const userId = crypto.randomUUID();
     await db
       .prepare("INSERT INTO admin_users (id, email, password_hash, created_at) VALUES (?, ?, ?, datetime('now'))")
-      .bind(userId, data.email.toLowerCase(), hashed)
+      .bind(userId, email, hashed)
       .run();
 
     const token = await createSessionToken(userId);
     setAdminCookie(token, 604800);
+    await recordAttempt(true);
     return { ok: true, message: "Operator account created successfully." };
   }
 
   const user = await db
     .prepare("SELECT * FROM admin_users WHERE email = ? LIMIT 1")
-    .bind(data.email.toLowerCase())
+    .bind(email)
     .first<{ id: string; email: string; password_hash: string }>();
 
   if (!user) {
-    // If table is empty and user pressed sign-in, auto-register as first admin
-    if (existingUsers?.count === 0 || !existingUsers) {
-      const hashed = await hashPassword(data.password);
-      const userId = crypto.randomUUID();
-      await db
-        .prepare("INSERT INTO admin_users (id, email, password_hash, created_at) VALUES (?, ?, ?, datetime('now'))")
-        .bind(userId, data.email.toLowerCase(), hashed)
-        .run();
-
-      const token = await createSessionToken(userId);
-      setAdminCookie(token, 604800);
-      return { ok: true, message: "First operator registered automatically." };
+    await recordAttempt(false);
+    if (noAdminsYet) {
+      return { ok: false, error: "No operator account yet - use Register to create the first one." };
     }
-
     return { ok: false, error: "Invalid email or password." };
   }
 
   const valid = await verifyPassword(data.password, user.password_hash);
   if (!valid) {
+    await recordAttempt(false);
     return { ok: false, error: "Invalid email or password." };
   }
 
   const token = await createSessionToken(user.id);
   setAdminCookie(token, 604800);
+  await recordAttempt(true);
   return { ok: true, message: "Signed in successfully." };
 }
 

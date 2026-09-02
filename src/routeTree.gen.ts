@@ -13,10 +13,14 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ContactRouteImport } from './routes/contact'
+import { Route as FaqRouteImport } from './routes/faq'
 import { Route as NowRouteImport } from './routes/now'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ResumeRouteImport } from './routes/resume'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminAnalyticsRouteImport } from './routes/admin.analytics'
+import { Route as AdminContentRouteImport } from './routes/admin.content'
 import { Route as AdminInboxRouteImport } from './routes/admin.inbox'
 import { Route as AdminMediaRouteImport } from './routes/admin.media'
 import { Route as AdminNowRouteImport } from './routes/admin.now'
@@ -24,6 +28,7 @@ import { Route as AdminProjectsRouteImport } from './routes/admin.projects'
 import { Route as AdminResumeRouteImport } from './routes/admin.resume'
 import { Route as AdminSeoRouteImport } from './routes/admin.seo'
 import { Route as AdminSiteRouteImport } from './routes/admin.site'
+import { Route as ApiSitemapRouteImport } from './routes/api/sitemap'
 import { Route as ProjectsIndexRouteImport } from './routes/projects.index'
 import { Route as ProjectsSlugRouteImport } from './routes/projects.$slug'
 import { Route as ApiMediaSplatRouteImport } from './routes/api/media.$'
@@ -49,14 +54,29 @@ const ContactRoute = ContactRouteImport.update({
   path: '/contact',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FaqRoute = FaqRouteImport.update({
+  id: '/faq',
+  path: '/faq',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const NowRoute = NowRouteImport.update({
   id: '/now',
   path: '/now',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ResumeRoute = ResumeRouteImport.update({
   id: '/resume',
   path: '/resume',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
@@ -67,6 +87,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
 const AdminAnalyticsRoute = AdminAnalyticsRouteImport.update({
   id: '/analytics',
   path: '/analytics',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminContentRoute = AdminContentRouteImport.update({
+  id: '/content',
+  path: '/content',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminInboxRoute = AdminInboxRouteImport.update({
@@ -104,6 +129,11 @@ const AdminSiteRoute = AdminSiteRouteImport.update({
   path: '/site',
   getParentRoute: () => AdminRoute,
 } as any)
+const ApiSitemapRoute = ApiSitemapRouteImport.update({
+  id: '/api/sitemap',
+  path: '/api/sitemap',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
   id: '/projects/',
   path: '/projects/',
@@ -130,9 +160,13 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
+  '/faq': typeof FaqRoute
   '/now': typeof NowRoute
+  '/privacy': typeof PrivacyRoute
   '/resume': typeof ResumeRoute
+  '/terms': typeof TermsRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
+  '/admin/content': typeof AdminContentRoute
   '/admin/inbox': typeof AdminInboxRoute
   '/admin/media': typeof AdminMediaRoute
   '/admin/now': typeof AdminNowRoute
@@ -140,6 +174,7 @@ export interface FileRoutesByFullPath {
   '/admin/resume': typeof AdminResumeRoute
   '/admin/seo': typeof AdminSeoRoute
   '/admin/site': typeof AdminSiteRoute
+  '/api/sitemap': typeof ApiSitemapRoute
   '/projects/$slug': typeof ProjectsSlugRoute
   '/admin/': typeof AdminIndexRoute
   '/projects/': typeof ProjectsIndexRoute
@@ -150,9 +185,13 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
+  '/faq': typeof FaqRoute
   '/now': typeof NowRoute
+  '/privacy': typeof PrivacyRoute
   '/resume': typeof ResumeRoute
+  '/terms': typeof TermsRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
+  '/admin/content': typeof AdminContentRoute
   '/admin/inbox': typeof AdminInboxRoute
   '/admin/media': typeof AdminMediaRoute
   '/admin/now': typeof AdminNowRoute
@@ -160,6 +199,7 @@ export interface FileRoutesByTo {
   '/admin/resume': typeof AdminResumeRoute
   '/admin/seo': typeof AdminSeoRoute
   '/admin/site': typeof AdminSiteRoute
+  '/api/sitemap': typeof ApiSitemapRoute
   '/projects/$slug': typeof ProjectsSlugRoute
   '/admin': typeof AdminIndexRoute
   '/projects': typeof ProjectsIndexRoute
@@ -172,9 +212,13 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
+  '/faq': typeof FaqRoute
   '/now': typeof NowRoute
+  '/privacy': typeof PrivacyRoute
   '/resume': typeof ResumeRoute
+  '/terms': typeof TermsRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
+  '/admin/content': typeof AdminContentRoute
   '/admin/inbox': typeof AdminInboxRoute
   '/admin/media': typeof AdminMediaRoute
   '/admin/now': typeof AdminNowRoute
@@ -182,6 +226,7 @@ export interface FileRoutesById {
   '/admin/resume': typeof AdminResumeRoute
   '/admin/seo': typeof AdminSeoRoute
   '/admin/site': typeof AdminSiteRoute
+  '/api/sitemap': typeof ApiSitemapRoute
   '/projects/$slug': typeof ProjectsSlugRoute
   '/admin/': typeof AdminIndexRoute
   '/projects/': typeof ProjectsIndexRoute
@@ -195,9 +240,13 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/contact'
+    | '/faq'
     | '/now'
+    | '/privacy'
     | '/resume'
+    | '/terms'
     | '/admin/analytics'
+    | '/admin/content'
     | '/admin/inbox'
     | '/admin/media'
     | '/admin/now'
@@ -205,6 +254,7 @@ export interface FileRouteTypes {
     | '/admin/resume'
     | '/admin/seo'
     | '/admin/site'
+    | '/api/sitemap'
     | '/projects/$slug'
     | '/admin/'
     | '/projects/'
@@ -215,9 +265,13 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/contact'
+    | '/faq'
     | '/now'
+    | '/privacy'
     | '/resume'
+    | '/terms'
     | '/admin/analytics'
+    | '/admin/content'
     | '/admin/inbox'
     | '/admin/media'
     | '/admin/now'
@@ -225,6 +279,7 @@ export interface FileRouteTypes {
     | '/admin/resume'
     | '/admin/seo'
     | '/admin/site'
+    | '/api/sitemap'
     | '/projects/$slug'
     | '/admin'
     | '/projects'
@@ -236,9 +291,13 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/contact'
+    | '/faq'
     | '/now'
+    | '/privacy'
     | '/resume'
+    | '/terms'
     | '/admin/analytics'
+    | '/admin/content'
     | '/admin/inbox'
     | '/admin/media'
     | '/admin/now'
@@ -246,6 +305,7 @@ export interface FileRouteTypes {
     | '/admin/resume'
     | '/admin/seo'
     | '/admin/site'
+    | '/api/sitemap'
     | '/projects/$slug'
     | '/admin/'
     | '/projects/'
@@ -258,8 +318,12 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   AuthRoute: typeof AuthRoute
   ContactRoute: typeof ContactRoute
+  FaqRoute: typeof FaqRoute
   NowRoute: typeof NowRoute
+  PrivacyRoute: typeof PrivacyRoute
   ResumeRoute: typeof ResumeRoute
+  TermsRoute: typeof TermsRoute
+  ApiSitemapRoute: typeof ApiSitemapRoute
   ProjectsSlugRoute: typeof ProjectsSlugRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
   ApiMediaSplatRoute: typeof ApiMediaSplatRoute
@@ -296,6 +360,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ContactRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/faq': {
+      id: '/faq'
+      path: '/faq'
+      fullPath: '/faq'
+      preLoaderRoute: typeof FaqRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/now': {
       id: '/now'
       path: '/now'
@@ -303,11 +374,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NowRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/resume': {
       id: '/resume'
       path: '/resume'
       fullPath: '/resume'
       preLoaderRoute: typeof ResumeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/': {
@@ -322,6 +407,13 @@ declare module '@tanstack/react-router' {
       path: '/analytics'
       fullPath: '/admin/analytics'
       preLoaderRoute: typeof AdminAnalyticsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/content': {
+      id: '/admin/content'
+      path: '/content'
+      fullPath: '/admin/content'
+      preLoaderRoute: typeof AdminContentRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/inbox': {
@@ -373,6 +465,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSiteRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/api/sitemap': {
+      id: '/api/sitemap'
+      path: '/api/sitemap'
+      fullPath: '/api/sitemap'
+      preLoaderRoute: typeof ApiSitemapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/projects/': {
       id: '/projects/'
       path: '/projects'
@@ -406,6 +505,7 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminAnalyticsRoute: typeof AdminAnalyticsRoute
+  AdminContentRoute: typeof AdminContentRoute
   AdminInboxRoute: typeof AdminInboxRoute
   AdminMediaRoute: typeof AdminMediaRoute
   AdminNowRoute: typeof AdminNowRoute
@@ -418,6 +518,7 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAnalyticsRoute: AdminAnalyticsRoute,
+  AdminContentRoute: AdminContentRoute,
   AdminInboxRoute: AdminInboxRoute,
   AdminMediaRoute: AdminMediaRoute,
   AdminNowRoute: AdminNowRoute,
@@ -435,8 +536,12 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   AuthRoute: AuthRoute,
   ContactRoute: ContactRoute,
+  FaqRoute: FaqRoute,
   NowRoute: NowRoute,
+  PrivacyRoute: PrivacyRoute,
   ResumeRoute: ResumeRoute,
+  TermsRoute: TermsRoute,
+  ApiSitemapRoute: ApiSitemapRoute,
   ProjectsSlugRoute: ProjectsSlugRoute,
   ProjectsIndexRoute: ProjectsIndexRoute,
   ApiMediaSplatRoute: ApiMediaSplatRoute,

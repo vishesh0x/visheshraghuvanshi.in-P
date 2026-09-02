@@ -1,10 +1,15 @@
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 
 import {
   contactInputSchema,
+  LEGAL_PAGE_KEYS,
   NOW_CATEGORIES,
   PAGE_META_KEYS,
   type AnalyticsSummary,
+  type FaqItem,
+  type LegalPage,
+  type LegalPageKey,
   type NowItem,
   type PageMeta,
   type PageMetaKey,
@@ -260,6 +265,55 @@ export const getPageMeta = createServerFn({ method: "GET" }).handler(
   },
 );
 
+/** Published FAQ entries, in display order. Dashboard-editable at /admin/content. */
+export const getFaqItems = createServerFn({ method: "GET" }).handler(
+  async (): Promise<FaqItem[]> => {
+    try {
+      const db = await getDb();
+      const { results } = await db
+        .prepare(
+          "SELECT * FROM faq_items WHERE published = 1 ORDER BY sort_order ASC, created_at ASC",
+        )
+        .all<{
+          id: string;
+          question: string;
+          answer: string;
+          published: number;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        }>();
+      return (results || []).map((row) => ({ ...row, published: Boolean(row.published) }));
+    } catch (err) {
+      console.warn("[getFaqItems] D1 query failed, using empty list:", err);
+      return [];
+    }
+  },
+);
+
+const FALLBACK_LEGAL: Record<LegalPageKey, LegalPage> = {
+  privacy: { page_key: "privacy", title: "Privacy policy", body_html: "<p>Coming soon.</p>" },
+  terms: { page_key: "terms", title: "Terms of use", body_html: "<p>Coming soon.</p>" },
+};
+
+/** Privacy/Terms page content. Dashboard-editable at /admin/content. */
+export const getLegalPage = createServerFn({ method: "GET" })
+  .validator((input: unknown) => z.object({ pageKey: z.enum(LEGAL_PAGE_KEYS) }).parse(input))
+  .handler(async ({ data }): Promise<LegalPage> => {
+    try {
+      const db = await getDb();
+      const row = await db
+        .prepare("SELECT page_key, title, body_html FROM legal_pages WHERE page_key = ? LIMIT 1")
+        .bind(data.pageKey)
+        .first<{ page_key: string; title: string; body_html: string }>();
+      if (!row) return FALLBACK_LEGAL[data.pageKey];
+      return { page_key: data.pageKey, title: row.title, body_html: row.body_html };
+    } catch (err) {
+      console.warn("[getLegalPage] D1 query failed, using fallback:", err);
+      return FALLBACK_LEGAL[data.pageKey];
+    }
+  });
+
 export const listProjects = createServerFn({ method: "GET" }).handler(
   async (): Promise<Project[]> => {
     try {
@@ -421,6 +475,22 @@ export const submitContactMessage = createServerFn({ method: "POST" })
         .slice(0, 16)
         .map((b) => b.toString(16).padStart(2, "0"))
         .join("");
+
+      // Basic throttle: block a second submission from the same hashed sender
+      // within 60 seconds. Cuts down on double-submits and spam bursts without
+      // needing an external rate-limit service.
+      const recent = await db
+        .prepare(
+          "SELECT COUNT(*) as count FROM contact_messages WHERE ip_hash = ? AND created_at > datetime('now', '-60 seconds')",
+        )
+        .bind(ipHash)
+        .first<{ count: number }>();
+      if (recent && recent.count > 0) {
+        return {
+          ok: false as const,
+          error: "Please wait a moment before sending another message.",
+        };
+      }
 
       const id = crypto.randomUUID();
 

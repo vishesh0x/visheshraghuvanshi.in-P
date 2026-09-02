@@ -122,6 +122,42 @@ export const pageMetaInputSchema = z.object({
 });
 export type PageMetaInput = z.infer<typeof pageMetaInputSchema>;
 
+export const faqItemSchema = z.object({
+  id: z.string(),
+  question: z.string(),
+  answer: z.string(),
+  published: z.boolean(),
+  sort_order: z.number(),
+  created_at: z.string(),
+  updated_at: z.string(),
+});
+export type FaqItem = z.infer<typeof faqItemSchema>;
+
+export const faqItemInputSchema = z.object({
+  question: z.string().trim().min(1, "Question is required").max(200),
+  answer: z.string().trim().min(1, "Answer is required").max(2000),
+  published: z.boolean(),
+  sort_order: z.number().int().min(0).max(10000),
+});
+export type FaqItemInput = z.infer<typeof faqItemInputSchema>;
+
+export const LEGAL_PAGE_KEYS = ["privacy", "terms"] as const;
+export type LegalPageKey = (typeof LEGAL_PAGE_KEYS)[number];
+
+export const legalPageSchema = z.object({
+  page_key: z.enum(LEGAL_PAGE_KEYS),
+  title: z.string(),
+  body_html: z.string(),
+});
+export type LegalPage = z.infer<typeof legalPageSchema>;
+
+export const legalPageInputSchema = z.object({
+  page_key: z.enum(LEGAL_PAGE_KEYS),
+  title: z.string().trim().min(1, "Title is required").max(140),
+  body_html: z.string().max(60000),
+});
+export type LegalPageInput = z.infer<typeof legalPageInputSchema>;
+
 export const NOW_CATEGORIES = ["building", "reading", "learning", "listening", "shipping"] as const;
 
 export const nowItemSchema = z.object({

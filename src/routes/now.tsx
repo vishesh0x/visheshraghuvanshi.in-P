@@ -34,6 +34,7 @@ function NowPage() {
   return (
     <SiteShell config={config}>
       <PageHeader
+        crumbs={[{ label: "Home", to: "/" }, { label: "Now" }]}
         eyebrow="Board / 02"
         title="Now"
         description="What has my attention at this exact moment. Written by hand, updated often, never automated."

@@ -8,6 +8,30 @@ export default defineConfig({
   resolve: {
     tsconfigPaths: true,
   },
+  build: {
+    // Source maps leak original file paths/source and make it trivial to
+    // reconstruct app internals from a production bundle - keep them off
+    // for the deployed build. Re-enable locally with `vite build --sourcemap`
+    // if you need to debug a production-only issue.
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        // Split the heaviest, rarely-co-loaded dependencies into their own
+        // chunks so a visitor to the public site never downloads the admin
+        // dashboard's editor/chart/drag-and-drop libraries, and vice versa.
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return undefined;
+          if (id.includes("@tiptap") || id.includes("prosemirror")) return "editor";
+          if (id.includes("recharts") || id.includes("d3-")) return "charts";
+          if (id.includes("@dnd-kit")) return "dnd";
+          if (id.includes("@tanstack/react-router") || id.includes("@tanstack/router-core")) {
+            return "router";
+          }
+          return undefined;
+        },
+      },
+    },
+  },
   plugins: [
     tanstackStart({
       server: {

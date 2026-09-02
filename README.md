@@ -173,6 +173,14 @@ This runs the schema from `d1-schema.sql` against Wrangler's local D1 emulator (
 > ```
 > This adds the browser tab title, favicon, and editable Now-board category list introduced
 > in the Site Config and Now Board admin pages.
+>
+> A later migration also added dashboard-editable SEO title/description per page
+> (`d1-migration-002-page-seo.sql`, if present) and dashboard-editable FAQ + Privacy/Terms
+> content:
+> ```bash
+> npx wrangler d1 execute portfolio_db --local  --file=./d1-migration-003-legal-faq.sql
+> npx wrangler d1 execute portfolio_db --remote --file=./d1-migration-003-legal-faq.sql
+> ```
 
 ### 4. Start the development server
 ```bash

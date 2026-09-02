@@ -23,6 +23,7 @@ const NAV = [
   { to: "/admin", label: "Overview", exact: true },
   { to: "/admin/site", label: "Site config", exact: false },
   { to: "/admin/seo", label: "SEO", exact: false },
+  { to: "/admin/content", label: "Content", exact: false },
   { to: "/admin/projects", label: "Projects", exact: false },
   { to: "/admin/now", label: "Now board", exact: false },
   { to: "/admin/resume", label: "Resume builder", exact: false },
@@ -76,13 +77,14 @@ function AdminLayout() {
             <span className="label-mono text-foreground">Control</span>
           </div>
 
-          <nav className="flex flex-wrap lg:block">
+          <nav aria-label="Admin sections" className="flex flex-wrap lg:block">
             {NAV.map((item) => {
               const active = item.exact ? pathname === item.to : pathname.startsWith(item.to);
               return (
                 <Link
                   key={item.to}
                   to={item.to}
+                  aria-current={active ? "page" : undefined}
                   className={cn(
                     "label-mono block border-b border-border px-5 py-3.5 transition-colors",
                     active

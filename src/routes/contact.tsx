@@ -71,6 +71,14 @@ function ContactPage() {
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
+
+    // Honeypot: a field real visitors never see or fill in. Bots that blindly fill
+    // every input trip this, so we quietly "succeed" without ever hitting the server.
+    if (String(form.get("company") ?? "").trim().length > 0) {
+      setSent(true);
+      return;
+    }
+
     const parsed = contactInputSchema.safeParse({
       name: String(form.get("name") ?? ""),
       email: String(form.get("email") ?? ""),
@@ -112,6 +120,7 @@ function ContactPage() {
   return (
     <SiteShell config={config}>
       <PageHeader
+        crumbs={[{ label: "Home", to: "/" }, { label: "Contact" }]}
         eyebrow="Channel / 04"
         title="Contact"
         description="Messages land directly in the admin inbox - no third-party form service, no tracking pixels."
@@ -136,6 +145,18 @@ function ContactPage() {
             </div>
           ) : (
             <form onSubmit={handleSubmit} noValidate className="max-w-xl">
+              {/* Honeypot field - hidden from sighted and screen-reader users, bots fill it anyway. */}
+              <div aria-hidden="true" className="absolute left-[-9999px] top-auto h-0 w-0 overflow-hidden">
+                <label htmlFor="company">Company</label>
+                <input
+                  id="company"
+                  name="company"
+                  type="text"
+                  tabIndex={-1}
+                  autoComplete="off"
+                />
+              </div>
+
               <div className="grid gap-6 sm:grid-cols-2">
                 <div>
                   <label htmlFor="name" className="label-mono text-muted-foreground">

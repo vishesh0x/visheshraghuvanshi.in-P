@@ -64,6 +64,20 @@ export const Route = createFileRoute("/api/public/contact")({
 
         try {
           const db = getD1Database();
+
+          const recent = await db
+            .prepare(
+              "SELECT COUNT(*) as count FROM contact_messages WHERE ip_hash = ? AND created_at > datetime('now', '-60 seconds')",
+            )
+            .bind(ipHash)
+            .first<{ count: number }>();
+          if (recent && recent.count > 0) {
+            return Response.json(
+              { ok: false, error: "Please wait a moment before sending another message." },
+              { status: 429 },
+            );
+          }
+
           const id = crypto.randomUUID();
 
           await db

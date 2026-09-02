@@ -136,12 +136,18 @@ export function RichTextEditor({
 
   return (
     <div className="border border-border bg-card text-foreground">
-      <div className="flex flex-wrap items-center gap-px border-b border-border bg-border">
+      <div
+        role="toolbar"
+        aria-label="Text formatting"
+        className="flex flex-wrap items-center gap-px border-b border-border bg-border"
+      >
         {BUTTONS.map((button) => (
           <button
             key={button.label}
             type="button"
             title={button.title}
+            aria-label={button.title}
+            aria-pressed={button.isActive(editor)}
             onClick={() => button.run(editor)}
             className={cn(
               "label-mono min-w-11 px-3 py-2.5 transition-colors",
@@ -156,6 +162,8 @@ export function RichTextEditor({
         <button
           type="button"
           title="Link"
+          aria-label="Insert or edit link"
+          aria-pressed={editor.isActive("link")}
           onClick={() => {
             const previous = editor.getAttributes("link")["href"] as string | undefined;
             const url = window.prompt("Link URL", previous ?? "https://");
