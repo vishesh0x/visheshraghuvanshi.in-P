@@ -97,9 +97,6 @@ function ProjectDetail() {
               { label: project.title },
             ]}
           />
-          <Link to="/projects" className="label-mono text-muted-foreground hover:text-signal">
-            ← Index
-          </Link>
           <div className="mt-8 flex flex-wrap items-baseline gap-4">
             <span className="label-mono text-signal">{project.year}</span>
             <h1 className="font-mono text-3xl leading-tight tracking-tight text-foreground sm:text-5xl">

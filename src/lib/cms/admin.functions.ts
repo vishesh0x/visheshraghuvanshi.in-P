@@ -832,11 +832,15 @@ const ALLOWED_UPLOAD_MIME_TYPES = new Set([
   "image/webp",
   "image/gif",
   "image/avif",
-  "image/svg+xml",
   "image/x-icon",
   "image/vnd.microsoft.icon",
   "application/pdf",
 ]);
+
+// 8MB covers portfolio cover images, favicons and a resume PDF comfortably
+// while keeping the base64-encoded request body (roughly 1.33x the raw
+// file size) well under typical Worker/Pages request body limits.
+const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
 
 export const uploadMedia = createServerFn({ method: "POST" })
   .validator((input: unknown) =>
@@ -854,10 +858,12 @@ export const uploadMedia = createServerFn({ method: "POST" })
     // Allow-list rather than trusting the client-supplied MIME type outright:
     // uploads served back from /api/media/<path> are same-origin, so an
     // unrestricted "text/html" or "image/svg+xml" (which can carry <script>)
-    // upload would be a stored-XSS vector against whoever opens the file.
+    // upload would be a stored-XSS vector against whoever opens the file
+    // directly - SVG is deliberately excluded below even though it's a
+    // common favicon format for this reason.
     if (!ALLOWED_UPLOAD_MIME_TYPES.has(data.mimeType)) {
       throw new Error(
-        `Unsupported file type "${data.mimeType}". Allowed: PNG, JPEG, WebP, GIF, AVIF, PDF.`,
+        `Unsupported file type "${data.mimeType}". Allowed: PNG, JPEG, WebP, GIF, AVIF, ICO, PDF.`,
       );
     }
 
@@ -865,6 +871,13 @@ export const uploadMedia = createServerFn({ method: "POST" })
     const r2 = await getR2();
 
     const binary = Uint8Array.from(atob(data.base64), (char) => char.charCodeAt(0));
+
+    if (binary.byteLength > MAX_UPLOAD_BYTES) {
+      throw new Error(
+        `File is ${(binary.byteLength / (1024 * 1024)).toFixed(1)}MB - the limit is ${MAX_UPLOAD_BYTES / (1024 * 1024)}MB.`,
+      );
+    }
+
     const safeName = data.name.replace(/[^a-zA-Z0-9._-]/g, "-").toLowerCase();
     const path = `${new Date().getFullYear()}/${Date.now()}-${safeName}`;
     const mimeType = data.mimeType || "application/octet-stream";

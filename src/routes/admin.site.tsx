@@ -222,7 +222,7 @@ function SiteConfigPage() {
             <AssetInput
               value={form.favicon_url}
               onChange={(value) => set("favicon_url", value)}
-              accept="image/png,image/x-icon,image/svg+xml,image/jpeg"
+              accept="image/png,image/x-icon,image/vnd.microsoft.icon,image/jpeg"
               placeholder="https://… or upload an icon"
             />
           </AdminField>

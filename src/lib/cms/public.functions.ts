@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
+import { CONTACT_RATE_LIMIT, checkRateLimit, RATE_LIMIT_MESSAGE } from "./rate-limit.server";
+
 import {
   contactInputSchema,
   LEGAL_PAGE_KEYS,
@@ -476,20 +478,12 @@ export const submitContactMessage = createServerFn({ method: "POST" })
         .map((b) => b.toString(16).padStart(2, "0"))
         .join("");
 
-      // Basic throttle: block a second submission from the same hashed sender
-      // within 60 seconds. Cuts down on double-submits and spam bursts without
-      // needing an external rate-limit service.
-      const recent = await db
-        .prepare(
-          "SELECT COUNT(*) as count FROM contact_messages WHERE ip_hash = ? AND created_at > datetime('now', '-60 seconds')",
-        )
-        .bind(ipHash)
-        .first<{ count: number }>();
-      if (recent && recent.count > 0) {
-        return {
-          ok: false as const,
-          error: "Please wait a moment before sending another message.",
-        };
+      // Rate limit: max 5 submissions per 10 minutes per hashed IP. Also
+      // still catches the instant-double-submit case (e.g. a double click)
+      // since that's just count >= max within an even shorter span.
+      const limit = await checkRateLimit(db, "contact_messages", "ip_hash", ipHash, CONTACT_RATE_LIMIT);
+      if (!limit.allowed) {
+        return { ok: false as const, error: RATE_LIMIT_MESSAGE };
       }
 
       const id = crypto.randomUUID();

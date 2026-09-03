@@ -85,7 +85,7 @@ function HomePage() {
                 {config.bio}
               </p>
 
-              <div className="mt-10 flex flex-wrap gap-px bg-border">
+              <div className="mt-10 inline-flex flex-wrap gap-px bg-border">
                 <Link
                   to="/projects"
                   className="label-mono bg-foreground px-6 py-4 text-background transition-opacity hover:opacity-85"
@@ -130,13 +130,13 @@ function HomePage() {
         <Container className="py-14 sm:py-20">
           <SectionHeader index="01" title="Selected work" meta={`${list.length} entries`} />
 
-          <div className="mt-px grid grid-cols-1 gap-px bg-border md:grid-cols-3">
+          <div className="mt-px grid grid-cols-1 gap-4 md:grid-cols-3">
             {list.map((project, index) => (
               <Link
                 key={project.id}
                 to="/projects/$slug"
                 params={{ slug: project.slug }}
-                className="group flex flex-col bg-background transition-colors hover:bg-accent"
+                className="group flex flex-col border border-border bg-background transition-colors hover:bg-accent"
               >
                 <div className="flex items-center justify-between border-b border-border px-4 py-3">
                   <span className="label-mono text-signal">
@@ -184,9 +184,9 @@ function HomePage() {
       <section>
         <Container className="py-14 sm:py-20">
           <SectionHeader index="02" title="Now" meta="Live board" />
-          <div className="mt-px grid grid-cols-1 gap-px bg-border sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-px grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-4">
             {nowItems.slice(0, 6).map((item) => (
-              <article key={item.id} className="bg-background p-5">
+              <article key={item.id} className="border border-border bg-background p-5">
                 <p className="label-mono text-signal">{item.category}</p>
                 <h3 className="mt-3 text-base font-medium text-foreground">{item.title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">

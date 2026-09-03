@@ -172,14 +172,21 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           rel: "stylesheet",
           href: appCss,
         },
-        config?.favicon_url
-          ? { rel: "icon", href: config.favicon_url }
-          : { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
-        { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
-        { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicon-32.png" },
-        { rel: "icon", type: "image/png", sizes: "16x16", href: "/favicon-16.png" },
-        { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },
-        { rel: "manifest", href: "/manifest.json" },
+        // Browsers pick a favicon from ALL matching <link rel="icon"> tags
+        // using their own heuristics (often preferring SVG/high-res PNG
+        // regardless of DOM order) - so the static bundled icons below must
+        // only be emitted when there's no custom one, or they silently win
+        // over whatever was uploaded from the admin dashboard.
+        ...(config?.favicon_url
+          ? [{ rel: "icon", href: config.favicon_url }]
+          : [
+              { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+              { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+              { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicon-32.png" },
+              { rel: "icon", type: "image/png", sizes: "16x16", href: "/favicon-16.png" },
+            ]),
+        { rel: "apple-touch-icon", sizes: "180x180", href: config?.favicon_url || "/apple-touch-icon.png" },
+        { rel: "manifest", href: "/api/manifest" },
         { rel: "canonical", href: SITE_URL },
       ],
     };

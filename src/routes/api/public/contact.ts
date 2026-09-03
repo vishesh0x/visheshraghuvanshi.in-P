@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { contactInputSchema } from "@/lib/cms/types";
+import { CONTACT_RATE_LIMIT, checkRateLimit, RATE_LIMIT_MESSAGE } from "@/lib/cms/rate-limit.server";
 import { getCloudflareEnv, getD1Database } from "@/lib/db/d1.server";
 
 /**
@@ -65,16 +66,14 @@ export const Route = createFileRoute("/api/public/contact")({
         try {
           const db = getD1Database();
 
-          const recent = await db
-            .prepare(
-              "SELECT COUNT(*) as count FROM contact_messages WHERE ip_hash = ? AND created_at > datetime('now', '-60 seconds')",
-            )
-            .bind(ipHash)
-            .first<{ count: number }>();
-          if (recent && recent.count > 0) {
+          const recent = await checkRateLimit(db, "contact_messages", "ip_hash", ipHash, CONTACT_RATE_LIMIT);
+          if (!recent.allowed) {
             return Response.json(
-              { ok: false, error: "Please wait a moment before sending another message." },
-              { status: 429 },
+              { error: RATE_LIMIT_MESSAGE },
+              {
+                status: 429,
+                headers: { "retry-after": String(recent.retryAfterSeconds) },
+              },
             );
           }
 

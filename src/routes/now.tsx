@@ -55,9 +55,9 @@ function NowPage() {
                       {String(group.length).padStart(2, "0")}
                     </span>
                   </div>
-                  <div className="mt-px grid grid-cols-1 gap-px bg-border sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="mt-px grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-4">
                     {group.map((item) => (
-                      <article key={item.id} className="bg-background">
+                      <article key={item.id} className="border border-border bg-background">
                         {item.image_url ? (
                           <img
                             src={item.image_url}

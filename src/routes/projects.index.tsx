@@ -49,7 +49,7 @@ function ProjectsPage() {
       />
 
       <div className="border-b border-border">
-        <Container className="flex flex-wrap items-center gap-px bg-border py-px">
+        <Container className="flex flex-wrap items-center gap-2 bg-background py-3">
           <button
             type="button"
             onClick={() => setActiveTag(null)}
@@ -84,13 +84,13 @@ function ProjectsPage() {
         {visible.length === 0 ? (
           <p className="label-mono text-muted-foreground">No records match this filter.</p>
         ) : (
-          <div className="grid grid-cols-1 gap-px bg-border sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {visible.map((project, index) => (
               <Link
                 key={project.id}
                 to="/projects/$slug"
                 params={{ slug: project.slug }}
-                className="group flex flex-col bg-background transition-colors hover:bg-accent"
+                className="group flex flex-col border border-border bg-background transition-colors hover:bg-accent"
               >
                 <div className="flex items-center justify-between border-b border-border px-4 py-3">
                   <span className="label-mono text-signal">

@@ -183,9 +183,9 @@ function MediaPage() {
       ) : assets.length === 0 ? (
         <EmptyState message="No assets uploaded yet." />
       ) : (
-        <div className="grid grid-cols-1 gap-px bg-border sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {assets.map((asset) => (
-            <div key={asset.id} className="bg-card">
+            <div key={asset.id} className="border border-border bg-card">
               {asset.mime_type.startsWith("image/") ? (
                 <img
                   src={asset.url}

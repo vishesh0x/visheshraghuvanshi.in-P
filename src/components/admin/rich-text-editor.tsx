@@ -139,7 +139,7 @@ export function RichTextEditor({
       <div
         role="toolbar"
         aria-label="Text formatting"
-        className="flex flex-wrap items-center gap-px border-b border-border bg-border"
+        className="flex flex-wrap items-center gap-1 border-b border-border bg-card p-1"
       >
         {BUTTONS.map((button) => (
           <button

@@ -39,7 +39,7 @@ function ResumePage() {
       />
 
       <Container className="py-12 sm:py-16">
-        <div className="flex flex-wrap items-center gap-px bg-border">
+        <div className="inline-flex flex-wrap items-stretch gap-px bg-border">
           <div className="bg-background px-4 py-3">
             <p className="label-mono text-muted-foreground">Owner</p>
             <p className="mt-1 font-mono text-sm text-foreground">{config.owner_name}</p>
