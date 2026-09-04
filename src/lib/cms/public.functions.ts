@@ -1,10 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { CONTACT_RATE_LIMIT, checkRateLimit, RATE_LIMIT_MESSAGE } from "./rate-limit.server";
-
 import {
-  contactInputSchema,
   LEGAL_PAGE_KEYS,
   NOW_CATEGORIES,
   PAGE_META_KEYS,
@@ -28,11 +25,6 @@ import {
 async function getDb() {
   const { getD1Database } = await import("@/lib/db/d1.server");
   return getD1Database();
-}
-
-async function getEnv() {
-  const { getCloudflareEnv } = await import("@/lib/db/d1.server");
-  return getCloudflareEnv();
 }
 
 /**
@@ -441,73 +433,6 @@ export const trackPageview = createServerFn({ method: "POST" })
       // Analytics must never break a page render.
     }
     return { ok: true };
-  });
-
-export const submitContactMessage = createServerFn({ method: "POST" })
-  .validator((input: unknown) => contactInputSchema.parse(input))
-  .handler(async ({ data }) => {
-    try {
-      const db = await getDb();
-      const env = await getEnv();
-      const { getRequest } = await import("@tanstack/react-start/server");
-      const request = getRequest();
-      const headers = request?.headers;
-      const country = headers?.get("cf-ipcountry") ?? null;
-      const ip = headers?.get("cf-connecting-ip") ?? headers?.get("x-forwarded-for") ?? "unknown";
-
-      const turnstileSecret = env["TURNSTILE_SECRET_KEY"] || process.env["TURNSTILE_SECRET_KEY"];
-      if (turnstileSecret) {
-        const verify = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ secret: turnstileSecret, response: data.token ?? "", remoteip: ip }),
-        })
-          .then((res) => res.json() as Promise<{ success?: boolean }>)
-          .catch(() => ({ success: false }));
-        if (!verify.success) {
-          return { ok: false as const, error: "Verification failed. Please try again." };
-        }
-      }
-
-      const digest = await crypto.subtle.digest(
-        "SHA-256",
-        new TextEncoder().encode(`${ip}|portfolio-os`),
-      );
-      const ipHash = Array.from(new Uint8Array(digest))
-        .slice(0, 16)
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("");
-
-      // Rate limit: max 5 submissions per 10 minutes per hashed IP. Also
-      // still catches the instant-double-submit case (e.g. a double click)
-      // since that's just count >= max within an even shorter span.
-      const limit = await checkRateLimit(db, "contact_messages", "ip_hash", ipHash, CONTACT_RATE_LIMIT);
-      if (!limit.allowed) {
-        return { ok: false as const, error: RATE_LIMIT_MESSAGE };
-      }
-
-      const id = crypto.randomUUID();
-
-      await db
-        .prepare(
-          "INSERT INTO contact_messages (id, name, email, subject, message, country, ip_hash, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))",
-        )
-        .bind(
-          id,
-          data.name,
-          data.email,
-          data.subject,
-          data.message,
-          country && country !== "XX" ? country : null,
-          ipHash,
-        )
-        .run();
-
-      return { ok: true as const };
-    } catch (err) {
-      console.error("[contact] insert failed", err);
-      return { ok: false as const, error: "Could not send message. Please try again." };
-    }
   });
 
 export type { AnalyticsSummary };

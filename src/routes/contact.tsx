@@ -7,7 +7,6 @@ import { Container, PageHeader } from "@/components/site/primitives";
 import { SiteShell } from "@/components/site/site-shell";
 import { pageMetaQuery, siteConfigQuery } from "@/lib/cms/queries";
 import { contactInputSchema } from "@/lib/cms/types";
-import { submitContactMessage } from "@/lib/cms/public.functions";
 
 export const Route = createFileRoute("/contact")({
   loader: async ({ context }) => {
@@ -100,12 +99,26 @@ function ContactPage() {
     setErrors({});
     setPending(true);
     try {
-      const result = await submitContactMessage({ data: parsed.data });
-      if (result.ok) {
+      // Goes straight to the real HTTP endpoint (not a server-function RPC
+      // call) so a rate-limit hit comes back as a genuine 429 status the
+      // client can actually branch on, instead of a 200 with an error field.
+      const response = await fetch("/api/public/contact", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(parsed.data),
+      });
+      const result = (await response.json().catch(() => null)) as
+        | { ok: true }
+        | { ok?: false; error?: string }
+        | null;
+
+      if (response.ok && result?.ok) {
         setSent(true);
         toast.success("Message delivered to the inbox.");
+      } else if (response.status === 429) {
+        toast.error(result?.error ?? "Too many requests. Please try again later.");
       } else {
-        toast.error(result.error);
+        toast.error(result?.error ?? "Could not send message. Please try again.");
       }
     } catch {
       toast.error("Network error. Please try again.");
