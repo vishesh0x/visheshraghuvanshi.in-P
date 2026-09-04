@@ -38,7 +38,18 @@ export default defineConfig({
         entry: "src/server.ts",
       },
     }),
-    nitro({ preset: "cloudflare-module" }),
+    nitro({
+      preset: "cloudflare-module",
+      // Nitro doesn't inherit compatibility_date from the project's own
+      // wrangler.json - left unset, it silently stamps whatever day the
+      // build happens to run into .output/server/wrangler.json, which is
+      // the config actually used for `wrangler deploy`. That means the
+      // "pin" in the root wrangler.json below was never taking effect,
+      // and every deploy quietly ran on a different Workers runtime
+      // compatibility date. Pinning it here to the date this exact stack
+      // was last verified working stops that drift.
+      compatibilityDate: "2026-09-04",
+    }),
     tailwindcss(),
     react(),
   ],
