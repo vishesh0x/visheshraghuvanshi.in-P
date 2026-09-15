@@ -4,6 +4,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Container, PageHeader } from "@/components/site/primitives";
 import { SiteShell } from "@/components/site/site-shell";
 import { nowQuery, pageMetaQuery, siteConfigQuery } from "@/lib/cms/queries";
+import { cdnImage, cdnImageSrcSet } from "@/lib/site-image";
 
 export const Route = createFileRoute("/now")({
   loader: async ({ context }) => {
@@ -60,9 +61,13 @@ function NowPage() {
                       <article key={item.id} className="border border-border bg-background">
                         {item.image_url ? (
                           <img
-                            src={item.image_url}
+                            src={cdnImage(item.image_url!, { width: 640, height: 256, quality: 75 })}
+                            srcSet={cdnImageSrcSet(item.image_url!, { width: 320, height: 128, quality: 75 })}
+                            sizes="(min-width: 1024px) 33vw, 100vw"
                             alt={item.title}
                             loading="lazy"
+                            width={640}
+                            height={256}
                             className="h-40 w-full border-b border-border object-cover"
                           />
                         ) : null}

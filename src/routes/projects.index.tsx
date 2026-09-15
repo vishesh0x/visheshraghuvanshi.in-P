@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { Container, PageHeader, Tag } from "@/components/site/primitives";
 import { SiteShell } from "@/components/site/site-shell";
 import { pageMetaQuery, projectsQuery, siteConfigQuery } from "@/lib/cms/queries";
+import { cdnImage, cdnImageSrcSet } from "@/lib/site-image";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/projects/")({
@@ -100,11 +101,13 @@ function ProjectsPage() {
                 </div>
                 {project.cover_url ? (
                   <img
-                    src={project.cover_url}
+                    src={cdnImage(project.cover_url!, { width: 900, height: 675, quality: 78 })}
+                    srcSet={cdnImageSrcSet(project.cover_url!, { width: 450, height: 338, quality: 78 })}
+                    sizes="(min-width: 768px) 33vw, 100vw"
                     alt={`${project.title} cover`}
                     loading="lazy"
-                    width={1200}
-                    height={900}
+                    width={900}
+                    height={675}
                     className="aspect-[4/3] w-full border-b border-border object-cover"
                   />
                 ) : null}

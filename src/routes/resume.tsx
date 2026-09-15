@@ -2,6 +2,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { Container, PageHeader } from "@/components/site/primitives";
+import { ObfuscatedMailLink } from "@/components/site/obfuscated-mail-link";
 import { SiteShell } from "@/components/site/site-shell";
 import { pageMetaQuery, resumeQuery, siteConfigQuery } from "@/lib/cms/queries";
 
@@ -45,8 +46,11 @@ function ResumePage() {
             <p className="mt-1 font-mono text-sm text-foreground">{config.owner_name}</p>
           </div>
           <div className="bg-background px-4 py-3">
-            <p className="label-mono text-muted-foreground">Contact</p>
-            <p className="mt-1 font-mono text-sm text-foreground">{config.contact_email}</p>
+            <ObfuscatedMailLink
+              email={config.contact_email}
+              label="Contact"
+              addressClassName="mt-1 font-mono text-sm text-foreground"
+            />
           </div>
           {config.resume_pdf_url ? (
             <a

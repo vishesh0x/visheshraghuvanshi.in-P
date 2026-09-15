@@ -5,6 +5,7 @@ import { Breadcrumbs } from "@/components/site/breadcrumbs";
 import { Container, Tag } from "@/components/site/primitives";
 import { SiteShell } from "@/components/site/site-shell";
 import { projectQuery, siteConfigQuery } from "@/lib/cms/queries";
+import { cdnImage, cdnImageSrcSet } from "@/lib/site-image";
 import { absoluteUrl } from "@/lib/site-url";
 
 export const Route = createFileRoute("/projects/$slug")({
@@ -118,10 +119,12 @@ function ProjectDetail() {
         <div className="border-b border-border">
           <Container className="py-0">
             <img
-              src={project.cover_url}
+              src={cdnImage(project.cover_url!, { width: 1400, height: 788, quality: 80 })}
+              srcSet={cdnImageSrcSet(project.cover_url!, { width: 700, height: 394, quality: 80 })}
+              sizes="100vw"
               alt={`${project.title} cover`}
-              width={1200}
-              height={900}
+              width={1400}
+              height={788}
               className="aspect-[16/9] w-full border-x border-border object-cover"
             />
           </Container>

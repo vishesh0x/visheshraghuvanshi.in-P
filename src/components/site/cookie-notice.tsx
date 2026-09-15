@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const STORAGE_KEY = "privacy-notice-dismissed-v1";
 
@@ -13,6 +13,7 @@ const STORAGE_KEY = "privacy-notice-dismissed-v1";
 export function CookieNotice() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const [visible, setVisible] = useState(false);
+  const noticeRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     try {
@@ -22,8 +23,34 @@ export function CookieNotice() {
     }
   }, []);
 
-  if (pathname.startsWith("/admin") || pathname.startsWith("/auth")) return null;
-  if (!visible) return null;
+  const hiddenRoute = pathname.startsWith("/admin") || pathname.startsWith("/auth");
+  const showing = visible && !hiddenRoute;
+
+  // Being `fixed` takes this out of document flow, so on narrow viewports -
+  // where the text wraps to 2-3 lines and the banner is noticeably taller -
+  // it can sit directly on top of whatever's at the bottom of the page for
+  // a first-time visitor. Reserve exactly as much space as it actually
+  // renders at (not a guessed fixed height, since that varies by viewport
+  // width) so nothing is ever hidden behind it, and release it on dismiss.
+  useEffect(() => {
+    if (!showing) return;
+    const el = noticeRef.current;
+    if (!el) return;
+
+    const apply = () => {
+      document.body.style.paddingBottom = `${el.offsetHeight}px`;
+    };
+    apply();
+
+    const observer = new ResizeObserver(apply);
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      document.body.style.paddingBottom = "";
+    };
+  }, [showing]);
+
+  if (!showing) return null;
 
   function dismiss() {
     try {
@@ -36,6 +63,7 @@ export function CookieNotice() {
 
   return (
     <div
+      ref={noticeRef}
       role="region"
       aria-label="Privacy notice"
       className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/97 backdrop-blur-sm"

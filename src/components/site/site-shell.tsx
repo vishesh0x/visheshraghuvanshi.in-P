@@ -1,6 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 
+import { ObfuscatedMailLink } from "@/components/site/obfuscated-mail-link";
 import { trackPageview } from "@/lib/cms/public.functions";
 import type { SiteConfig } from "@/lib/cms/types";
 import { cn } from "@/lib/utils";
@@ -125,12 +126,10 @@ export function SiteShell({ config, children }: { config: SiteConfig; children: 
           </div>
           <div className="bg-background p-6">
             <p className="label-mono text-muted-foreground">Direct</p>
-            <a
-              href={`mailto:${config.contact_email}`}
+            <ObfuscatedMailLink
+              email={config.contact_email}
               className="mt-3 block text-sm text-foreground underline decoration-border underline-offset-4 hover:decoration-signal"
-            >
-              {config.contact_email}
-            </a>
+            />
           </div>
           <div className="bg-background p-6">
             <p className="label-mono text-muted-foreground">Elsewhere</p>

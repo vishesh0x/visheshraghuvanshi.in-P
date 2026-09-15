@@ -4,6 +4,7 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import { Container, SectionHeader, Tag } from "@/components/site/primitives";
 import { SiteShell } from "@/components/site/site-shell";
 import { nowQuery, pageMetaQuery, projectsQuery, siteConfigQuery } from "@/lib/cms/queries";
+import { cdnImage, cdnImageSrcSet } from "@/lib/site-image";
 import { absoluteUrl } from "@/lib/site-url";
 
 export const Route = createFileRoute("/")({
@@ -49,7 +50,12 @@ function HomePage() {
         name: config.owner_name,
         url: absoluteUrl("/"),
         jobTitle: config.hero_line_one,
-        email: `mailto:${config.contact_email}`,
+        // Deliberately no `email` field here - JSON-LD is machine-readable
+        // by design, which makes it the single easiest target for address
+        // harvesters (no HTML parsing/entity-decoding needed, it's already
+        // structured plaintext). `sameAs` still gives crawlers identity
+        // signal without exposing the address. Use the Contact page or
+        // footer instead - both render the address entity-encoded.
         sameAs: config.socials.map((social) => social.url),
       },
     ],
@@ -146,11 +152,13 @@ function HomePage() {
                 </div>
                 {project.cover_url ? (
                   <img
-                    src={project.cover_url}
+                    src={cdnImage(project.cover_url!, { width: 900, height: 675, quality: 78 })}
+                    srcSet={cdnImageSrcSet(project.cover_url!, { width: 450, height: 338, quality: 78 })}
+                    sizes="(min-width: 768px) 33vw, 100vw"
                     alt={`${project.title} cover`}
                     loading="lazy"
-                    width={1200}
-                    height={900}
+                    width={900}
+                    height={675}
                     className="aspect-[4/3] w-full border-b border-border object-cover"
                   />
                 ) : null}

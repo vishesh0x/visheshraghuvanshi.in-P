@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { AdminButton, AdminPage, EmptyState } from "@/components/admin/ui";
+import { cdnImage } from "@/lib/site-image";
 import {
   deleteMedia,
   deleteR2Object,
@@ -188,9 +189,11 @@ function MediaPage() {
             <div key={asset.id} className="border border-border bg-card">
               {asset.mime_type.startsWith("image/") ? (
                 <img
-                  src={asset.url}
+                  src={cdnImage(asset.url, { width: 400, height: 300, quality: 70 })}
                   alt={asset.name}
                   loading="lazy"
+                  width={400}
+                  height={300}
                   className="aspect-[4/3] w-full border-b border-border object-cover"
                 />
               ) : (

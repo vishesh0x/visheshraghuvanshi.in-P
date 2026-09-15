@@ -285,3 +285,34 @@ INSERT INTO contact_messages (id, name, email, subject, message, is_read, is_sta
 ('msg-1', 'Sarah Jenkins', 'sarah@studionorth.co', 'Potential collaboration', 'We are scoping a design system rebuild for Q4 and would like to talk about architecture support. Two-month engagement, remote.', 0, 1, 'GB', datetime('now', '-2 hours')),
 ('msg-2', 'Marcus Thorne', 'marcus@thorne.dev', 'Question about Synapse Engine', 'How do you handle invalidation when a shared fragment changes across hundreds of documents? Genuinely curious about the fan-out strategy.', 0, 0, 'US', datetime('now', '-1 day')),
 ('msg-3', 'Ana Ruiz', 'ana@ruiz.design', 'Speaking invitation', 'Would you be open to a 30-minute talk on privacy-first analytics at our March meetup?', 1, 0, 'ES', datetime('now', '-6 days'));
+
+-- ============ indexes ============
+-- Every query below already runs today - these just make them use an index
+-- scan instead of a full table scan. Cheap at this app's current scale,
+-- but free to add now and only gets more valuable as tables grow (pageviews
+-- and contact_messages in particular grow on every visit/submission, not
+-- just on content you create yourself).
+
+-- Powers the rate limiter (checkRateLimit) - runs on every single contact
+-- form submission, filtering by ip_hash and a created_at cutoff.
+CREATE INDEX idx_contact_messages_ip_hash_created ON contact_messages (ip_hash, created_at);
+CREATE INDEX idx_contact_messages_created ON contact_messages (created_at DESC);
+
+-- Powers admin.analytics.tsx's date-range summary and raw event list.
+CREATE INDEX idx_pageviews_created ON pageviews (created_at DESC);
+
+-- Powers the public projects list (WHERE published = 1 ORDER BY sort_order).
+CREATE INDEX idx_projects_published_sort ON projects (published, sort_order);
+
+-- Powers the public Now board (WHERE published = 1 ORDER BY sort_order).
+CREATE INDEX idx_now_items_published_sort ON now_items (published, sort_order);
+
+-- Powers the public resume (WHERE hidden = 0 ORDER BY sort_order), and
+-- resolving a section's entries.
+CREATE INDEX idx_resume_sections_hidden_sort ON resume_sections (hidden, sort_order);
+CREATE INDEX idx_resume_entries_section ON resume_entries (section_id);
+CREATE INDEX idx_resume_entries_hidden_sort ON resume_entries (hidden, sort_order);
+
+-- Powers the public FAQ list (WHERE published = 1 ORDER BY sort_order).
+CREATE INDEX idx_faq_items_published_sort ON faq_items (published, sort_order);
+

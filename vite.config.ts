@@ -11,23 +11,38 @@ export default defineConfig({
   build: {
     // Source maps leak original file paths/source and make it trivial to
     // reconstruct app internals from a production bundle - keep them off
-    // for the deployed build. Re-enable locally with `vite build --sourcemap`
+    // for every build target. Re-enable locally with `vite build --sourcemap`
     // if you need to debug a production-only issue.
     sourcemap: false,
-    rollupOptions: {
-      output: {
-        // Split the heaviest, rarely-co-loaded dependencies into their own
-        // chunks so a visitor to the public site never downloads the admin
-        // dashboard's editor/chart/drag-and-drop libraries, and vice versa.
-        manualChunks(id) {
-          if (!id.includes("node_modules")) return undefined;
-          if (id.includes("@tiptap") || id.includes("prosemirror")) return "editor";
-          if (id.includes("recharts") || id.includes("d3-")) return "charts";
-          if (id.includes("@dnd-kit")) return "dnd";
-          if (id.includes("@tanstack/react-router") || id.includes("@tanstack/router-core")) {
-            return "router";
-          }
-          return undefined;
+  },
+  environments: {
+    // Scoped to just the client (browser) bundle - this is the one
+    // visitors actually download, so it's the one worth splitting.
+    // Setting manualChunks at the top-level `build` key instead applies it
+    // to every build phase, including Nitro's own Worker bundling, which
+    // sets its own conflicting `codeSplitting` output option and just
+    // produces harmless "option is ignored" warnings during that phase for
+    // no benefit (nobody downloads the Worker script, so splitting it into
+    // named chunks doesn't help anyone).
+    client: {
+      build: {
+        rollupOptions: {
+          output: {
+            // Split the heaviest, rarely-co-loaded dependencies into their
+            // own chunks so a visitor to the public site never downloads
+            // the admin dashboard's editor/chart/drag-and-drop libraries,
+            // and vice versa.
+            manualChunks(id) {
+              if (!id.includes("node_modules")) return undefined;
+              if (id.includes("@tiptap") || id.includes("prosemirror")) return "editor";
+              if (id.includes("recharts") || id.includes("d3-")) return "charts";
+              if (id.includes("@dnd-kit")) return "dnd";
+              if (id.includes("@tanstack/react-router") || id.includes("@tanstack/router-core")) {
+                return "router";
+              }
+              return undefined;
+            },
+          },
         },
       },
     },

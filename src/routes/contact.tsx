@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Container, PageHeader } from "@/components/site/primitives";
+import { ObfuscatedMailLink } from "@/components/site/obfuscated-mail-link";
 import { SiteShell } from "@/components/site/site-shell";
 import { pageMetaQuery, siteConfigQuery } from "@/lib/cms/queries";
 import { contactInputSchema } from "@/lib/cms/types";
@@ -241,13 +242,12 @@ function ContactPage() {
             <p className="label-mono text-muted-foreground">Direct routes</p>
           </div>
           <div className="divide-y divide-border">
-            <a
-              href={`mailto:${config.contact_email}`}
+            <ObfuscatedMailLink
+              email={config.contact_email}
               className="block px-4 py-4 hover:bg-accent"
-            >
-              <p className="label-mono text-muted-foreground">Email</p>
-              <p className="mt-1.5 font-mono text-xs text-foreground">{config.contact_email}</p>
-            </a>
+              label="Email"
+              addressClassName="mt-1.5 font-mono text-xs text-foreground"
+            />
             {config.socials.map((social) => (
               <a
                 key={social.url}
