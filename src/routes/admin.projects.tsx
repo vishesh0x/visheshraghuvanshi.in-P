@@ -1,7 +1,7 @@
 import type { DragEndEvent } from "@dnd-kit/core";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { AssetInput } from "@/components/admin/asset-input";
@@ -155,9 +155,9 @@ function ProjectsAdminPage() {
     save.mutate({ id: editingId === "new" ? null : editingId, values: parsed.data });
   }
 
-  function set<K extends keyof ProjectInput>(key: K, value: ProjectInput[K]) {
+  const set = useCallback(<K extends keyof ProjectInput>(key: K, value: ProjectInput[K]) => {
     setForm((current) => ({ ...current, [key]: value }));
-  }
+  }, []);
 
   if (editingId !== null) {
     return (

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useCallback, useState } from "react";
 import { toast } from "sonner";
 
 import { AssetInput } from "@/components/admin/asset-input";
@@ -70,9 +70,9 @@ function SiteConfigPage() {
     onError: (error: Error) => toast.error(error.message),
   });
 
-  function set<K extends keyof SiteConfigInput>(key: K, value: SiteConfigInput[K]) {
+  const set = useCallback(<K extends keyof SiteConfigInput>(key: K, value: SiteConfigInput[K]) => {
     setForm((current) => ({ ...current, [key]: value }));
-  }
+  }, []);
 
   function submit(event: React.FormEvent) {
     event.preventDefault();
