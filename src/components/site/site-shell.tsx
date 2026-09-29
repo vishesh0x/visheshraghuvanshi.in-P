@@ -51,6 +51,16 @@ export function SiteShell({ config, children }: { config: SiteConfig; children: 
 
   useEffect(() => setMenuOpen(false), [pathname]);
 
+  // Let keyboard users dismiss the mobile menu with Escape.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenuOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [menuOpen]);
+
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-40 border-b border-border bg-background/92 backdrop-blur-sm">
@@ -92,6 +102,7 @@ export function SiteShell({ config, children }: { config: SiteConfig; children: 
               type="button"
               aria-label={menuOpen ? "Close navigation" : "Open navigation"}
               aria-expanded={menuOpen}
+              aria-controls="mobile-nav"
               onClick={() => setMenuOpen((open) => !open)}
               className="label-mono border border-border px-3 py-2 text-foreground md:hidden"
             >
@@ -101,11 +112,14 @@ export function SiteShell({ config, children }: { config: SiteConfig; children: 
         </div>
 
         {menuOpen ? (
-          <nav aria-label="Mobile" className="border-t border-border md:hidden">
+          <nav id="mobile-nav" aria-label="Mobile" className="border-t border-border md:hidden">
             {NAV.map((item) => (
               <Link
                 key={item.to}
                 to={item.to}
+                aria-current={
+                  (item.to === "/" ? pathname === "/" : pathname.startsWith(item.to)) ? "page" : undefined
+                }
                 className="label-mono block border-b border-border px-6 py-4 text-foreground"
               >
                 {item.label}

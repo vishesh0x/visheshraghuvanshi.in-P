@@ -25,6 +25,7 @@ function AuthPage() {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [setupToken, setSetupToken] = useState("");
   const [pending, setPending] = useState(false);
 
   useEffect(() => {
@@ -38,7 +39,12 @@ function AuthPage() {
     setPending(true);
     try {
       const res = await signInAdminAction({
-        data: { email, password, isSignUp: mode === "signup" },
+        data: {
+          email,
+          password,
+          isSignUp: mode === "signup",
+          ...(mode === "signup" ? { setupToken } : {}),
+        },
       });
 
       if (!res.ok) {
@@ -87,13 +93,35 @@ function AuthPage() {
               id="password"
               type="password"
               required
-              minLength={6}
+              minLength={mode === "signup" ? 12 : 1}
               autoComplete={mode === "signup" ? "new-password" : "current-password"}
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               className={fieldClass}
             />
           </div>
+
+          {mode === "signup" ? (
+            <div className="mt-5">
+              <label htmlFor="setup-token" className="label-mono text-muted-foreground">
+                Setup token
+              </label>
+              <input
+                id="setup-token"
+                type="password"
+                required
+                autoComplete="off"
+                value={setupToken}
+                onChange={(event) => setSetupToken(event.target.value)}
+                className={fieldClass}
+                aria-describedby="setup-token-hint"
+              />
+              <p id="setup-token-hint" className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+                The ADMIN_SETUP_TOKEN secret you configured on the server. Password must be 12+
+                characters.
+              </p>
+            </div>
+          ) : null}
 
           <button
             type="submit"
@@ -113,7 +141,8 @@ function AuthPage() {
         </form>
 
         <p className="border-t border-border px-5 py-3 text-[11px] leading-relaxed text-muted-foreground">
-          The first account created becomes the system administrator.
+          Registration only works before the first operator exists and requires the server setup
+          token.
         </p>
       </div>
     </div>

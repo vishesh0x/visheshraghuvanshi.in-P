@@ -32,17 +32,43 @@ const TURNSTILE_SITE_KEY = import.meta.env["VITE_TURNSTILE_SITE_KEY"] as string 
 
 type FieldErrors = Partial<Record<"name" | "email" | "subject" | "message", string>>;
 
-function TurnstileWidget({ onToken }: { onToken: (token: string) => void }) {
+type TurnstileApi = {
+  render: (el: Element, o: Record<string, unknown>) => string;
+  reset: (widgetId?: string) => void;
+};
+
+function getTurnstile(): TurnstileApi | undefined {
+  return (window as unknown as { turnstile?: TurnstileApi }).turnstile;
+}
+
+/**
+ * Turnstile tokens are single-use. After ANY submit attempt (success, validation
+ * error, rate limit) the token is spent, so the widget must be reset - otherwise
+ * every retry is rejected with "Verification failed" until the page is reloaded.
+ * Bump `resetSignal` after each attempt to get a fresh challenge.
+ */
+function TurnstileWidget({
+  onToken,
+  resetSignal,
+}: {
+  onToken: (token: string) => void;
+  resetSignal: number;
+}) {
   const ref = useRef<HTMLDivElement>(null);
+  const widgetId = useRef<string | null>(null);
 
   useEffect(() => {
     if (!TURNSTILE_SITE_KEY) return;
     const scriptId = "cf-turnstile-script";
     const render = () => {
-      const api = (window as unknown as { turnstile?: { render: (el: Element, o: object) => void } })
-        .turnstile;
-      if (api && ref.current && ref.current.childElementCount === 0) {
-        api.render(ref.current, { sitekey: TURNSTILE_SITE_KEY, callback: onToken });
+      const api = getTurnstile();
+      if (api && ref.current && widgetId.current === null) {
+        widgetId.current = api.render(ref.current, {
+          sitekey: TURNSTILE_SITE_KEY,
+          callback: onToken,
+          "expired-callback": () => onToken(""),
+          "error-callback": () => onToken(""),
+        });
       }
     };
     if (document.getElementById(scriptId)) {
@@ -57,6 +83,11 @@ function TurnstileWidget({ onToken }: { onToken: (token: string) => void }) {
     document.head.appendChild(script);
   }, [onToken]);
 
+  useEffect(() => {
+    if (resetSignal === 0 || widgetId.current === null) return;
+    getTurnstile()?.reset(widgetId.current);
+  }, [resetSignal]);
+
   if (!TURNSTILE_SITE_KEY) return null;
   return <div ref={ref} className="mt-2" />;
 }
@@ -67,6 +98,8 @@ function ContactPage() {
   const [pending, setPending] = useState(false);
   const [sent, setSent] = useState(false);
   const [token, setToken] = useState("");
+  const [turnstileReset, setTurnstileReset] = useState(0);
+  const formRef = useRef<HTMLFormElement>(null);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -94,6 +127,15 @@ function ContactPage() {
         if (key && !next[key]) next[key] = issue.message;
       }
       setErrors(next);
+      // Move focus to the first invalid field so keyboard and screen-reader
+      // users land where the problem is instead of hunting for it.
+      const first = (["name", "email", "subject", "message"] as const).find((key) => next[key]);
+      if (first) formRef.current?.querySelector<HTMLElement>(`#${first}`)?.focus();
+      return;
+    }
+
+    if (TURNSTILE_SITE_KEY && !token) {
+      toast.error("Please complete the verification check first.");
       return;
     }
 
@@ -125,6 +167,10 @@ function ContactPage() {
       toast.error("Network error. Please try again.");
     } finally {
       setPending(false);
+      if (TURNSTILE_SITE_KEY) {
+        setToken("");
+        setTurnstileReset((n) => n + 1);
+      }
     }
   }
 
@@ -143,7 +189,7 @@ function ContactPage() {
       <Container className="grid gap-12 py-12 lg:grid-cols-[1fr_300px] sm:py-16">
         <div>
           {sent ? (
-            <div className="border border-border p-8">
+            <div className="border border-border p-8" role="status" aria-live="polite">
               <p className="label-mono text-signal">Transmission complete</p>
               <h2 className="mt-4 font-mono text-xl text-foreground">Message received</h2>
               <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
@@ -158,7 +204,7 @@ function ContactPage() {
               </button>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} noValidate className="max-w-xl">
+            <form ref={formRef} onSubmit={handleSubmit} noValidate className="max-w-xl">
               {/* Honeypot field - hidden from sighted and screen-reader users, bots fill it anyway. */}
               <div aria-hidden="true" className="absolute left-[-9999px] top-auto h-0 w-0 overflow-hidden">
                 <label htmlFor="company">Company</label>
@@ -176,9 +222,9 @@ function ContactPage() {
                   <label htmlFor="name" className="label-mono text-muted-foreground">
                     Name
                   </label>
-                  <input id="name" name="name" maxLength={100} className={fieldClass} />
+                  <input id="name" name="name" maxLength={100} autoComplete="name" aria-invalid={Boolean(errors.name)} aria-describedby={errors.name ? "name-error" : undefined} className={fieldClass} />
                   {errors.name ? (
-                    <p className="label-mono mt-2 text-destructive">{errors.name}</p>
+                    <p id="name-error" role="alert" className="label-mono mt-2 text-destructive">{errors.name}</p>
                   ) : null}
                 </div>
                 <div>
@@ -190,10 +236,13 @@ function ContactPage() {
                     name="email"
                     type="email"
                     maxLength={255}
+                    autoComplete="email"
+                    aria-invalid={Boolean(errors.email)}
+                    aria-describedby={errors.email ? "email-error" : undefined}
                     className={fieldClass}
                   />
                   {errors.email ? (
-                    <p className="label-mono mt-2 text-destructive">{errors.email}</p>
+                    <p id="email-error" role="alert" className="label-mono mt-2 text-destructive">{errors.email}</p>
                   ) : null}
                 </div>
               </div>
@@ -202,9 +251,9 @@ function ContactPage() {
                 <label htmlFor="subject" className="label-mono text-muted-foreground">
                   Subject
                 </label>
-                <input id="subject" name="subject" maxLength={160} className={fieldClass} />
+                <input id="subject" name="subject" maxLength={160} aria-invalid={Boolean(errors.subject)} aria-describedby={errors.subject ? "subject-error" : undefined} className={fieldClass} />
                 {errors.subject ? (
-                  <p className="label-mono mt-2 text-destructive">{errors.subject}</p>
+                  <p id="subject-error" role="alert" className="label-mono mt-2 text-destructive">{errors.subject}</p>
                 ) : null}
               </div>
 
@@ -217,14 +266,16 @@ function ContactPage() {
                   name="message"
                   rows={8}
                   maxLength={4000}
+                  aria-invalid={Boolean(errors.message)}
+                  aria-describedby={errors.message ? "message-error" : undefined}
                   className={`${fieldClass} resize-y leading-relaxed`}
                 />
                 {errors.message ? (
-                  <p className="label-mono mt-2 text-destructive">{errors.message}</p>
+                  <p id="message-error" role="alert" className="label-mono mt-2 text-destructive">{errors.message}</p>
                 ) : null}
               </div>
 
-              <TurnstileWidget onToken={setToken} />
+              <TurnstileWidget onToken={setToken} resetSignal={turnstileReset} />
 
               <button
                 type="submit"

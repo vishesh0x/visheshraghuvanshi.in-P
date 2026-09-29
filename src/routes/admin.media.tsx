@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { AdminButton, AdminPage, EmptyState } from "@/components/admin/ui";
-import { cdnImage } from "@/lib/site-image";
+import { CdnImage } from "@/components/site/cdn-image";
 import {
   deleteMedia,
   deleteR2Object,
@@ -188,12 +188,13 @@ function MediaPage() {
           {assets.map((asset) => (
             <div key={asset.id} className="border border-border bg-card">
               {asset.mime_type.startsWith("image/") ? (
-                <img
-                  src={cdnImage(asset.url, { width: 400, height: 300, quality: 70 })}
+                <CdnImage
+                  src={asset.url}
                   alt={asset.name}
-                  loading="lazy"
-                  width={400}
-                  height={300}
+                  widths={[400, 800]}
+                  sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                  aspect={4 / 3}
+                  quality={70}
                   className="aspect-[4/3] w-full border-b border-border object-cover"
                 />
               ) : (

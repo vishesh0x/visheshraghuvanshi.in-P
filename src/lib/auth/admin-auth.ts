@@ -45,6 +45,10 @@ export async function hashPassword(password: string): Promise<string> {
  * but are not re-hashed automatically here - if you have real accounts on
  * the legacy format, prompt a password reset to move them to PBKDF2.
  */
+export function isLegacyHash(storedHash: string): boolean {
+  return !storedHash.startsWith("pbkdf2:");
+}
+
 export async function verifyPassword(password: string, storedHash: string): Promise<boolean> {
   if (storedHash.startsWith("pbkdf2:")) {
     const parts = storedHash.split(":");
@@ -120,9 +124,13 @@ export const signInAdminAction = createServerFn({ method: "POST" })
   .validator((input: unknown) =>
     z
       .object({
-        email: z.string().email(),
-        password: z.string().min(6),
+        email: z.string().trim().email().max(255),
+        // Sign-in accepts any existing password (accounts created under the old
+        // 6-character rule must still be able to log in); the stronger minimum
+        // is enforced server-side when a new account is created.
+        password: z.string().min(1).max(200),
         isSignUp: z.boolean().optional(),
+        setupToken: z.string().max(200).optional(),
       })
       .parse(input),
   )

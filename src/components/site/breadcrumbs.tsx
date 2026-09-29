@@ -1,3 +1,4 @@
+import { jsonLdString } from "@/lib/json-ld";
 import { Link } from "@tanstack/react-router";
 
 import { absoluteUrl } from "@/lib/site-url";
@@ -26,7 +27,7 @@ export function Breadcrumbs({ items }: { items: Crumb[] }) {
       {/* eslint-disable-next-line react/no-danger */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdString(jsonLd) }}
       />
       <ol className="label-mono flex flex-wrap items-center gap-2 text-muted-foreground">
         {items.map((item, index) => {

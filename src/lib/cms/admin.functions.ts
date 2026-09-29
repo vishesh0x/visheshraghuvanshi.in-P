@@ -48,28 +48,14 @@ const idInput = z.object({ id: z.string().min(1) });
 const reorderInput = z.object({ ids: z.array(z.string().min(1)).max(500) });
 
 /**
- * Strip inline color/background styles (and legacy <font color>) from
- * rich-text HTML before it's persisted. Content pasted in from Word,
- * Notion, Google Docs, etc. carries hardcoded inline colors that override
- * theme CSS by specificity - this keeps stored bodies theme-clean.
+ * Sanitize rich-text HTML before it is persisted. This is an allow-list
+ * (see security.server.ts): it removes scripts, event handlers, unsafe URLs
+ * and every inline style (which also covers the stray colour/background
+ * declarations pasted from Word/Notion that used to be stripped here).
  */
-function stripInlineColorHtml(html: string): string {
-  if (!html) return html;
-  return html
-    .replace(/style="([^"]*)"/gi, (_match, styleContent: string) => {
-      const cleaned = styleContent
-        .split(";")
-        .map((declaration) => declaration.trim())
-        .filter(
-          (declaration) =>
-            declaration &&
-            !/^color\s*:/i.test(declaration) &&
-            !/^background(-color)?\s*:/i.test(declaration),
-        )
-        .join("; ");
-      return cleaned ? `style="${cleaned}"` : "";
-    })
-    .replace(/(<font\b[^>]*)\scolor="[^"]*"/gi, "$1");
+async function cleanRichHtml(html: string): Promise<string> {
+  const { sanitizeRichHtml } = await import("@/lib/security.server");
+  return sanitizeRichHtml(html);
 }
 
 function parseJsonArray<T>(value: unknown): T[] {
@@ -311,7 +297,7 @@ export const updateLegalPage = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     await checkAuth();
     const db = await getDb();
-    const cleanBody = stripInlineColorHtml(data.body_html);
+    const cleanBody = await cleanRichHtml(data.body_html);
     await db
       .prepare(
         `INSERT INTO legal_pages (page_key, title, body_html) VALUES (?, ?, ?)
@@ -392,7 +378,7 @@ export const upsertProject = createServerFn({ method: "POST" })
     const db = await getDb();
     const v = data.values;
     const tagsJson = JSON.stringify(v.tags ?? []);
-    const cleanBody = stripInlineColorHtml(v.body);
+    const cleanBody = await cleanRichHtml(v.body);
 
     if (data.id) {
       await db
@@ -509,27 +495,56 @@ export const upsertNowItem = createServerFn({ method: "POST" })
     await checkAuth();
     const db = await getDb();
     const v = data.values;
+    const image = v.image_url || null;
+    const link = v.link_url || null;
+    const isMissingColumn = (err: unknown) => /no such column|has no column/i.test(String(err));
 
-    if (data.id) {
-      await db
-        .prepare(
-          `UPDATE now_items SET
-            title = ?, description = ?, category = ?, sort_order = ?, published = ?, updated_at = datetime('now')
-          WHERE id = ?`,
-        )
-        .bind(v.title, v.description, v.category, v.sort_order, v.published ? 1 : 0, data.id)
-        .run();
-      return { id: data.id };
+    const id = data.id ?? crypto.randomUUID();
+
+    // image_url / link_url were collected by the admin form but never saved.
+    // They need d1-migration-005-now-media.sql; until it has been applied the
+    // legacy statement is used so saving a Now item never breaks.
+    try {
+      if (data.id) {
+        await db
+          .prepare(
+            `UPDATE now_items SET
+              title = ?, description = ?, category = ?, sort_order = ?, published = ?,
+              image_url = ?, link_url = ?, updated_at = datetime('now')
+            WHERE id = ?`,
+          )
+          .bind(v.title, v.description, v.category, v.sort_order, v.published ? 1 : 0, image, link, id)
+          .run();
+      } else {
+        await db
+          .prepare(
+            `INSERT INTO now_items (id, title, description, category, sort_order, published, image_url, link_url, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`,
+          )
+          .bind(id, v.title, v.description, v.category, v.sort_order, v.published ? 1 : 0, image, link)
+          .run();
+      }
+    } catch (err) {
+      if (!isMissingColumn(err)) throw err;
+      if (data.id) {
+        await db
+          .prepare(
+            `UPDATE now_items SET
+              title = ?, description = ?, category = ?, sort_order = ?, published = ?, updated_at = datetime('now')
+            WHERE id = ?`,
+          )
+          .bind(v.title, v.description, v.category, v.sort_order, v.published ? 1 : 0, id)
+          .run();
+      } else {
+        await db
+          .prepare(
+            `INSERT INTO now_items (id, title, description, category, sort_order, published, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`,
+          )
+          .bind(id, v.title, v.description, v.category, v.sort_order, v.published ? 1 : 0)
+          .run();
+      }
     }
-
-    const id = crypto.randomUUID();
-    await db
-      .prepare(
-        `INSERT INTO now_items (id, title, description, category, sort_order, published, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`,
-      )
-      .bind(id, v.title, v.description, v.category, v.sort_order, v.published ? 1 : 0)
-      .run();
 
     return { id };
   });
@@ -870,7 +885,19 @@ export const uploadMedia = createServerFn({ method: "POST" })
     const db = await getDb();
     const r2 = await getR2();
 
-    const binary = Uint8Array.from(atob(data.base64), (char) => char.charCodeAt(0));
+    let binary: Uint8Array;
+    try {
+      binary = Uint8Array.from(atob(data.base64), (char) => char.charCodeAt(0));
+    } catch {
+      throw new Error("The uploaded file could not be read (invalid encoding).");
+    }
+
+    // The MIME type comes from the browser and is trivially forged. Check the
+    // file's real leading bytes so e.g. an HTML file can't be stored as image/png.
+    const { matchesDeclaredType } = await import("@/lib/security.server");
+    if (!matchesDeclaredType(data.mimeType, binary)) {
+      throw new Error("The file contents do not match its declared type.");
+    }
 
     if (binary.byteLength > MAX_UPLOAD_BYTES) {
       throw new Error(
@@ -883,7 +910,7 @@ export const uploadMedia = createServerFn({ method: "POST" })
     const mimeType = data.mimeType || "application/octet-stream";
 
     if (r2) {
-      await r2.put(path, binary.buffer, {
+      await r2.put(path, binary, {
         httpMetadata: { contentType: mimeType },
       });
     }
@@ -1060,7 +1087,15 @@ export const getAnalytics = createServerFn({ method: "GET" })
       if (row.visitor_key) uniqueVisitors.add(row.visitor_key);
       if (new Date(row.created_at).getTime() >= dayAgo) last24h += 1;
       pathCounts.set(row.path, (pathCounts.get(row.path) ?? 0) + 1);
-      const referrer = row.referrer ? new URL(row.referrer, "https://x.dev").hostname : "direct";
+      let referrer = "direct";
+      if (row.referrer) {
+        try {
+          referrer = new URL(row.referrer, "https://x.dev").hostname || "direct";
+        } catch {
+          // Referrers are attacker-controlled input; never let one bad row break the report.
+          referrer = "invalid";
+        }
+      }
       referrerCounts.set(referrer, (referrerCounts.get(referrer) ?? 0) + 1);
     }
 

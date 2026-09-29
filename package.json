@@ -9,7 +9,8 @@
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "d1:setup": "wrangler d1 execute portfolio_db --local --file=./d1-schema.sql",
-    "d1:setup:remote": "wrangler d1 execute portfolio_db --remote --file=./d1-schema.sql",
+    "d1:reset:remote": "echo 'REFUSING: this drops ALL production tables. Run the wrangler command from the README by hand if you really mean it.' && exit 1",
+    "d1:migrate:remote": "wrangler d1 execute portfolio_db --remote --file=./d1-migration-005-now-media.sql",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
@@ -33,6 +34,7 @@
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.2.1",
     "tw-animate-css": "^1.3.4",
+    "xss": "^1.0.15",
     "zod": "^3.24.2"
   },
   "devDependencies": {

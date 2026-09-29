@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { Container, PageHeader, Tag } from "@/components/site/primitives";
 import { SiteShell } from "@/components/site/site-shell";
 import { pageMetaQuery, projectsQuery, siteConfigQuery } from "@/lib/cms/queries";
-import { cdnImage, cdnImageSrcSet } from "@/lib/site-image";
+import { CdnImage } from "@/components/site/cdn-image";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/projects/")({
@@ -100,14 +100,13 @@ function ProjectsPage() {
                   <span className="label-mono text-muted-foreground">{project.year}</span>
                 </div>
                 {project.cover_url ? (
-                  <img
-                    src={cdnImage(project.cover_url!, { width: 900, height: 675, quality: 78 })}
-                    srcSet={cdnImageSrcSet(project.cover_url!, { width: 450, height: 338, quality: 78 })}
-                    sizes="(min-width: 768px) 33vw, 100vw"
+                  <CdnImage
+                    src={project.cover_url}
                     alt={`${project.title} cover`}
-                    loading="lazy"
-                    width={900}
-                    height={675}
+                    widths={[400, 640, 900, 1200]}
+                    sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                    aspect={4 / 3}
+                    quality={78}
                     className="aspect-[4/3] w-full border-b border-border object-cover"
                   />
                 ) : null}

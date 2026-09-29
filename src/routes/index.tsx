@@ -1,10 +1,11 @@
+import { jsonLdString } from "@/lib/json-ld";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 
 import { Container, SectionHeader, Tag } from "@/components/site/primitives";
 import { SiteShell } from "@/components/site/site-shell";
 import { nowQuery, pageMetaQuery, projectsQuery, siteConfigQuery } from "@/lib/cms/queries";
-import { cdnImage, cdnImageSrcSet } from "@/lib/site-image";
+import { CdnImage } from "@/components/site/cdn-image";
 import { absoluteUrl } from "@/lib/site-url";
 
 export const Route = createFileRoute("/")({
@@ -66,7 +67,7 @@ function HomePage() {
       {/* eslint-disable-next-line react/no-danger */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdString(jsonLd) }}
       />
       {/* Hero */}
       <section className="border-b border-border grid-paper">
@@ -151,14 +152,13 @@ function HomePage() {
                   <span className="label-mono text-muted-foreground">{project.year}</span>
                 </div>
                 {project.cover_url ? (
-                  <img
-                    src={cdnImage(project.cover_url!, { width: 900, height: 675, quality: 78 })}
-                    srcSet={cdnImageSrcSet(project.cover_url!, { width: 450, height: 338, quality: 78 })}
-                    sizes="(min-width: 768px) 33vw, 100vw"
+                  <CdnImage
+                    src={project.cover_url}
                     alt={`${project.title} cover`}
-                    loading="lazy"
-                    width={900}
-                    height={675}
+                    widths={[400, 640, 900, 1200]}
+                    sizes="(min-width: 768px) 33vw, 100vw"
+                    aspect={4 / 3}
+                    quality={78}
                     className="aspect-[4/3] w-full border-b border-border object-cover"
                   />
                 ) : null}

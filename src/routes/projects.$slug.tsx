@@ -1,3 +1,4 @@
+import { jsonLdString } from "@/lib/json-ld";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute, notFound } from "@tanstack/react-router";
 
@@ -5,7 +6,8 @@ import { Breadcrumbs } from "@/components/site/breadcrumbs";
 import { Container, Tag } from "@/components/site/primitives";
 import { SiteShell } from "@/components/site/site-shell";
 import { projectQuery, siteConfigQuery } from "@/lib/cms/queries";
-import { cdnImage, cdnImageSrcSet } from "@/lib/site-image";
+import { CdnImage } from "@/components/site/cdn-image";
+import { cdnImage } from "@/lib/site-image";
 import { absoluteUrl } from "@/lib/site-url";
 
 export const Route = createFileRoute("/projects/$slug")({
@@ -36,8 +38,8 @@ export const Route = createFileRoute("/projects/$slug")({
         { property: "og:type", content: "article" },
         ...(loaderData.cover_url
           ? [
-              { property: "og:image", content: absoluteUrl(loaderData.cover_url) },
-              { name: "twitter:image", content: absoluteUrl(loaderData.cover_url) },
+              { property: "og:image", content: absoluteUrl(cdnImage(loaderData.cover_url, { width: 1200, height: 630, fit: "cover", gravity: "auto", quality: 80 })) },
+              { name: "twitter:image", content: absoluteUrl(cdnImage(loaderData.cover_url, { width: 1200, height: 630, fit: "cover", gravity: "auto", quality: 80 })) },
             ]
           : []),
       ],
@@ -87,7 +89,7 @@ function ProjectDetail() {
       {/* eslint-disable-next-line react/no-danger */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdString(jsonLd) }}
       />
       <div className="border-b border-border">
         <Container className="py-12 sm:py-16">
@@ -116,17 +118,25 @@ function ProjectDetail() {
       </div>
 
       {project.cover_url ? (
-        <div className="border-b border-border">
+        <div className="border-b border-border bg-muted/40">
           <Container className="py-0">
-            <img
-              src={cdnImage(project.cover_url!, { width: 1400, height: 788, quality: 80 })}
-              srcSet={cdnImageSrcSet(project.cover_url!, { width: 700, height: 394, quality: 80 })}
-              sizes="100vw"
-              alt={`${project.title} cover`}
-              width={1400}
-              height={788}
-              className="aspect-[16/9] w-full border-x border-border object-cover"
-            />
+            {/*
+              Show the WHOLE cover, never crop it: no forced aspect ratio and no
+              server-side crop (no `aspect` prop => Cloudflare only scales).
+              Artwork that is narrower than the column is centred on a quiet
+              panel instead of being stretched or cut.
+            */}
+            <div className="flex justify-center border-x border-border bg-background">
+              <CdnImage
+                src={project.cover_url}
+                alt={`${project.title} cover`}
+                widths={[640, 960, 1280, 1600, 2000]}
+                sizes="(min-width: 1400px) 1400px, 100vw"
+                quality={80}
+                priority
+                className="block h-auto max-h-[80vh] w-auto max-w-full object-contain"
+              />
+            </div>
           </Container>
         </div>
       ) : null}

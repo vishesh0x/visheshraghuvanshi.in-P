@@ -17,6 +17,8 @@ import { Route as FaqRouteImport } from './routes/faq'
 import { Route as NowRouteImport } from './routes/now'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ResumeRouteImport } from './routes/resume'
+import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminAnalyticsRouteImport } from './routes/admin.analytics'
@@ -73,6 +75,16 @@ const PrivacyRoute = PrivacyRouteImport.update({
 const ResumeRoute = ResumeRouteImport.update({
   id: '/resume',
   path: '/resume',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
+  id: '/robots.txt',
+  path: '/robots.txt',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TermsRoute = TermsRouteImport.update({
@@ -170,6 +182,8 @@ export interface FileRoutesByFullPath {
   '/now': typeof NowRoute
   '/privacy': typeof PrivacyRoute
   '/resume': typeof ResumeRoute
+  '/robots.txt': typeof RobotsDottxtRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/content': typeof AdminContentRoute
@@ -196,6 +210,8 @@ export interface FileRoutesByTo {
   '/now': typeof NowRoute
   '/privacy': typeof PrivacyRoute
   '/resume': typeof ResumeRoute
+  '/robots.txt': typeof RobotsDottxtRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/content': typeof AdminContentRoute
@@ -224,6 +240,8 @@ export interface FileRoutesById {
   '/now': typeof NowRoute
   '/privacy': typeof PrivacyRoute
   '/resume': typeof ResumeRoute
+  '/robots.txt': typeof RobotsDottxtRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/content': typeof AdminContentRoute
@@ -253,6 +271,8 @@ export interface FileRouteTypes {
     | '/now'
     | '/privacy'
     | '/resume'
+    | '/robots.txt'
+    | '/sitemap.xml'
     | '/terms'
     | '/admin/analytics'
     | '/admin/content'
@@ -279,6 +299,8 @@ export interface FileRouteTypes {
     | '/now'
     | '/privacy'
     | '/resume'
+    | '/robots.txt'
+    | '/sitemap.xml'
     | '/terms'
     | '/admin/analytics'
     | '/admin/content'
@@ -306,6 +328,8 @@ export interface FileRouteTypes {
     | '/now'
     | '/privacy'
     | '/resume'
+    | '/robots.txt'
+    | '/sitemap.xml'
     | '/terms'
     | '/admin/analytics'
     | '/admin/content'
@@ -334,6 +358,8 @@ export interface RootRouteChildren {
   NowRoute: typeof NowRoute
   PrivacyRoute: typeof PrivacyRoute
   ResumeRoute: typeof ResumeRoute
+  RobotsDottxtRoute: typeof RobotsDottxtRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TermsRoute: typeof TermsRoute
   ApiManifestRoute: typeof ApiManifestRoute
   ApiSitemapRoute: typeof ApiSitemapRoute
@@ -399,6 +425,20 @@ declare module '@tanstack/react-router' {
       path: '/resume'
       fullPath: '/resume'
       preLoaderRoute: typeof ResumeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/robots.txt': {
+      id: '/robots.txt'
+      path: '/robots.txt'
+      fullPath: '/robots.txt'
+      preLoaderRoute: typeof RobotsDottxtRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/terms': {
@@ -560,6 +600,8 @@ const rootRouteChildren: RootRouteChildren = {
   NowRoute: NowRoute,
   PrivacyRoute: PrivacyRoute,
   ResumeRoute: ResumeRoute,
+  RobotsDottxtRoute: RobotsDottxtRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   TermsRoute: TermsRoute,
   ApiManifestRoute: ApiManifestRoute,
   ApiSitemapRoute: ApiSitemapRoute,

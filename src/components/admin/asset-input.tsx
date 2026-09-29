@@ -33,8 +33,13 @@ export function AssetInput({
     setBusy(true);
     try {
       const buffer = new Uint8Array(await file.arrayBuffer());
+      // Encode in 32 KB slices: building one string a byte at a time (millions of
+      // concatenations for a multi-MB image) freezes the tab.
       let binary = "";
-      for (const byte of buffer) binary += String.fromCharCode(byte);
+      const CHUNK = 0x8000;
+      for (let i = 0; i < buffer.length; i += CHUNK) {
+        binary += String.fromCharCode(...buffer.subarray(i, i + CHUNK));
+      }
       const asset = await uploadMedia({
         data: { name: file.name, mimeType: file.type, base64: btoa(binary) },
       });

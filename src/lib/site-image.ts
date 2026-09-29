@@ -1,70 +1,113 @@
 /**
- * Builds a Cloudflare Image Resizing URL that transforms an image on the
- * fly - resized, recompressed, format-negotiated (WebP/AVIF where the
- * visitor's browser supports it) - without storing anything beyond the
- * single original file already sitting in R2.
+ * Cloudflare Image Resizing helpers ("Transform via URL").
  *
- * How this differs from the "Cloudflare Images" product: that's a separate
- * paid storage+delivery service you'd upload a *copy* of each file into.
- * This is "Image Resizing" (also billed as "Transform via URL"/"Transform
- * via Workers" in Cloudflare's docs) - it fetches an existing origin URL
- * (here, our own /api/media/<path> route, which already streams the
- * original straight from R2) and resizes/recompresses the response at
- * Cloudflare's edge, caching the transformed variant there. The R2 object
- * itself is never touched, copied, or duplicated.
+ * Builds `/cdn-cgi/image/<options>/<origin>` URLs that resize, recompress and
+ * format-negotiate (WebP/AVIF) an image at Cloudflare's edge. The R2 object
+ * itself is never copied or modified.
  *
- * REQUIRES: "Image Resizing" enabled for this zone in the Cloudflare
- * dashboard (Speed -> Optimization -> Image Resizing, or the Images tab,
- * depending on current dashboard layout - Cloudflare's plan/pricing
- * boundaries for this feature have shifted over time, so check what's
- * currently included in your plan rather than trusting a fixed claim here).
- * This is OFF by default (see VITE_CF_IMAGE_RESIZING in .env.sample) -
- * until both that env var is set to "true" AND the dashboard setting is
- * confirmed on, every image call here just serves the plain, untransformed
- * /api/media URL, so nothing breaks in the meantime.
+ * Off by default: set VITE_CF_IMAGE_RESIZING="true" at build time AND enable
+ * Image Resizing for the zone in the Cloudflare dashboard. Until then every
+ * helper returns the plain, untransformed /api/media URL.
+ *
+ * ── Why images used to crop ───────────────────────────────────────────────
+ * 1. `cdnImageSrcSet` scaled the WIDTH for each pixel ratio but reused the
+ *    same fixed HEIGHT, so at 1.5x/2x Cloudflare was asked for e.g.
+ *    1400x394 with fit=cover - a 3.5:1 strip cut out of the middle.
+ * 2. `sizes` was passed alongside `1x/1.5x/2x` descriptors, where browsers
+ *    ignore it (it only applies to `w` descriptors).
+ * 3. The project page then forced 16:9 + object-cover on 4:3 artwork.
+ *
+ * The rules below make that class of bug impossible:
+ *   - A responsive set is built from an ASPECT RATIO, so height always
+ *     follows width and every candidate is the same crop.
+ *   - No aspect ratio => no height => the image is only ever scaled
+ *     (fit=scale-down: never upscaled, never cropped).
+ *   - Sets use `w` descriptors, so `sizes` actually works.
  */
 
 export type ImageFit = "cover" | "contain" | "scale-down";
 
 export interface CdnImageOptions {
-  /** Target width in CSS pixels the image will actually render at. */
+  /** Target width in CSS pixels. */
   width: number;
-  /** Only needed when fit is "cover"/"contain" and you want a fixed aspect box. */
+  /** Only meaningful with fit "cover"/"contain". Omit to preserve aspect ratio. */
   height?: number;
   fit?: ImageFit;
-  /** 1-100. 75 is a good default - visually lossless for photos at typical sizes. */
+  /** 1-100. 75 is visually lossless for photos at typical sizes. */
   quality?: number;
+  /** Where to keep the subject when cropping with fit "cover". */
+  gravity?: "auto" | "center" | "top" | "bottom" | "left" | "right";
+}
+
+export interface CdnSrcSetOptions {
+  /** Candidate widths in device pixels, ascending. */
+  widths: readonly number[];
+  /**
+   * width / height of the box the image is displayed in (e.g. 4 / 3).
+   * Provide it ONLY when the box crops the image on purpose (cards, thumbnails).
+   * Omit it to show the whole image, uncropped.
+   */
+  aspect?: number;
+  fit?: ImageFit;
+  quality?: number;
+  gravity?: CdnImageOptions["gravity"];
 }
 
 const RESIZING_ENABLED =
-  (import.meta.env.VITE_CF_IMAGE_RESIZING ?? "false").toString().toLowerCase() === "true";
+  String(import.meta.env["VITE_CF_IMAGE_RESIZING"] ?? "false").toLowerCase() === "true";
+
+export const cdnImageEnabled = RESIZING_ENABLED;
+
+/** Resolve a stored value (`/api/media/x.jpg`, `2026/x.jpg` or an https URL) to a fetchable source. */
+function resolveSource(originPath: string): string {
+  if (/^https?:\/\//i.test(originPath)) return originPath;
+  return originPath.startsWith("/") ? originPath : `/api/media/${originPath}`;
+}
+
+/** Only same-origin sources and http(s) URLs can be transformed. */
+function canTransform(source: string): boolean {
+  return source.startsWith("/api/media/") || /^https?:\/\//i.test(source);
+}
 
 export function cdnImage(originPath: string, opts: CdnImageOptions): string {
-  const source = originPath.startsWith("/") ? originPath : `/api/media/${originPath}`;
+  const source = resolveSource(originPath);
+  if (!RESIZING_ENABLED || !canTransform(source)) return source;
 
-  if (!RESIZING_ENABLED) return source;
+  const cropping = opts.height !== undefined;
+  // Never crop unless the caller asked for a box; never upscale a small original.
+  const fit = opts.fit ?? (cropping ? "cover" : "scale-down");
 
   const params = [
-    `width=${opts.width}`,
-    opts.height ? `height=${opts.height}` : null,
-    `fit=${opts.fit ?? "cover"}`,
+    `width=${Math.round(opts.width)}`,
+    cropping ? `height=${Math.round(opts.height as number)}` : null,
+    `fit=${fit}`,
+    fit === "cover" && opts.gravity ? `gravity=${opts.gravity}` : null,
     `quality=${opts.quality ?? 75}`,
     "format=auto",
+    "metadata=none",
   ]
     .filter(Boolean)
     .join(",");
 
-  // Cloudflare intercepts this exact path prefix at the edge - it's not a
-  // route this app's own Worker code handles or needs to know about.
-  return `/cdn-cgi/image/${params}${source}`;
+  // Cloudflare handles this prefix at the edge; the app's Worker never sees it.
+  return `/cdn-cgi/image/${params}${source.startsWith("/") ? source : `/${source}`}`;
 }
 
-/** Builds a `srcSet` covering common device pixel ratios for a given render width. */
-export function cdnImageSrcSet(originPath: string, opts: CdnImageOptions): string {
-  return [1, 1.5, 2]
-    .map((scale) => {
-      const width = Math.round(opts.width * scale);
-      return `${cdnImage(originPath, { ...opts, width })} ${scale}x`;
+/**
+ * `srcset` using width descriptors. Height is derived from `aspect` for EVERY
+ * candidate, so all of them are the same crop of the same picture.
+ */
+export function cdnImageSrcSet(originPath: string, opts: CdnSrcSetOptions): string {
+  return opts.widths
+    .map((width) => {
+      const url = cdnImage(originPath, {
+        width,
+        ...(opts.aspect ? { height: Math.round(width / opts.aspect) } : {}),
+        ...(opts.fit ? { fit: opts.fit } : {}),
+        ...(opts.quality !== undefined ? { quality: opts.quality } : {}),
+        ...(opts.gravity ? { gravity: opts.gravity } : {}),
+      });
+      return `${url} ${width}w`;
     })
     .join(", ");
 }

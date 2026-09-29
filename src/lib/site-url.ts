@@ -11,6 +11,16 @@ export const SITE_URL: string = (
   (import.meta.env["VITE_SITE_URL"] as string | undefined) || "https://example.com"
 ).replace(/\/+$/, "");
 
+if (import.meta.env.PROD && SITE_URL === "https://example.com") {
+  // Canonical tags, Open Graph URLs, JSON-LD, robots.txt and the sitemap all
+  // derive from this. Left at the fallback, search engines are told your site
+  // lives at example.com.
+  console.warn(
+    "[site-url] VITE_SITE_URL is not set - canonical/OG/sitemap URLs point at https://example.com. " +
+      "Set VITE_SITE_URL to your real origin at BUILD time.",
+  );
+}
+
 export function absoluteUrl(path: string): string {
   if (/^https?:\/\//i.test(path)) return path;
   return `${SITE_URL}${path.startsWith("/") ? path : `/${path}`}`;

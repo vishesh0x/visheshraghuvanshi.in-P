@@ -1,4 +1,9 @@
 -- Cloudflare D1 (SQLite) Schema for Portfolio OS
+--
+-- !! DESTRUCTIVE !! This file DROPS every table below (admin accounts, contact
+-- messages, analytics, media records, content) before recreating them. Use it
+-- only for a brand-new database. For an existing database run the additive
+-- d1-migration-*.sql files instead.
 
 DROP TABLE IF EXISTS site_config;
 DROP TABLE IF EXISTS projects;
@@ -157,6 +162,8 @@ CREATE TABLE now_items (
   category TEXT NOT NULL DEFAULT 'BUILDING',
   sort_order INTEGER NOT NULL DEFAULT 0,
   published INTEGER NOT NULL DEFAULT 1,
+  image_url TEXT,
+  link_url TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );

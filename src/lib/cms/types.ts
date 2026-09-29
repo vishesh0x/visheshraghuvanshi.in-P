@@ -9,11 +9,31 @@ import { z } from "zod";
  * function bodies and nothing else.
  */
 
+/**
+ * Only http(s) - and mailto for socials - may ever reach an href. `z.string().url()`
+ * on its own accepts `javascript:alert(1)`, which would run on click.
+ */
 export const socialLinkSchema = z.object({
   label: z.string().trim().min(1).max(40),
-  url: z.string().trim().url().max(300),
+  url: z
+    .string()
+    .trim()
+    .max(300)
+    .refine((v) => /^(https?:\/\/|mailto:)/i.test(v), "Must start with https://, http:// or mailto:"),
 });
 export type SocialLink = z.infer<typeof socialLinkSchema>;
+
+/** Same-origin path (/api/media/...) or http(s) URL; blank becomes null-ish upstream. */
+function siteAssetUrl() {
+  return z
+    .string()
+    .trim()
+    .max(500)
+    .refine(
+      (v) => v === "" || /^https?:\/\//i.test(v) || (v.startsWith("/") && !v.startsWith("//")),
+      "Must be an http(s) URL or a /path on this site",
+    );
+}
 
 export const siteConfigSchema = z.object({
   id: z.string(),
@@ -28,10 +48,10 @@ export const siteConfigSchema = z.object({
   contact_email: z.string().trim().email().max(160),
   meta_description: z.string().trim().max(300),
   build_version: z.string().trim().max(40),
-  resume_pdf_url: z.string().trim().max(500).nullable(),
+  resume_pdf_url: siteAssetUrl().nullable(),
   socials: z.array(socialLinkSchema),
   site_title: z.string().trim().min(1).max(120),
-  favicon_url: z.string().trim().max(500).nullable(),
+  favicon_url: siteAssetUrl().nullable(),
   now_categories: z.array(z.string().trim().min(1).max(32)),
   updated_at: z.string(),
 });
@@ -75,7 +95,10 @@ const optionalUrl = z
   .string()
   .trim()
   .max(500)
-  .refine((v) => v === "" || /^https?:\/\/.+/.test(v) || v.startsWith("/"), "Must be a URL")
+  .refine(
+    (v) => v === "" || /^https?:\/\/.+/i.test(v) || (v.startsWith("/") && !v.startsWith("//")),
+    "Must be an http(s) URL or a /path on this site",
+  )
   .transform((v) => (v === "" ? null : v))
   .nullable();
 

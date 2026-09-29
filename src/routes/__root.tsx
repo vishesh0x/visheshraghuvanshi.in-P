@@ -15,27 +15,7 @@ import { Toaster } from "../components/ui/sonner";
 import { CookieNotice } from "../components/site/cookie-notice";
 import { siteConfigQuery } from "../lib/cms/queries";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { SITE_URL, absoluteUrl } from "../lib/site-url";
-
-/**
- * Keeps <link rel="canonical"> in sync with the current route on every
- * navigation. Canonical URLs prevent duplicate-content issues (e.g. trailing
- * slashes, query strings) from splitting search ranking across variants.
- */
-function useCanonicalLink() {
-  const pathname = useRouterState({ select: (state) => state.location.pathname });
-  useEffect(() => {
-    const href = absoluteUrl(pathname);
-    let link = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
-    if (!link) {
-      link = document.createElement("link");
-      link.rel = "canonical";
-      document.head.appendChild(link);
-    }
-    link.href = href;
-  }, [pathname]);
-}
-
+import { absoluteUrl } from "../lib/site-url";
 
 function NotFoundComponent() {
   useEffect(() => {
@@ -187,7 +167,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
             ]),
         { rel: "apple-touch-icon", sizes: "180x180", href: config?.favicon_url || "/apple-touch-icon.png" },
         { rel: "manifest", href: "/api/manifest" },
-        { rel: "canonical", href: SITE_URL },
       ],
     };
   },
@@ -199,10 +178,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootShell({ children }: { children: ReactNode }) {
+  // Rendered per request on the server (and re-rendered on navigation), so every
+  // page's canonical points at itself in the initial HTML. It used to be a fixed
+  // link to the homepage, telling search engines every page was a duplicate of "/".
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
   return (
     <html lang="en">
       <head>
         <HeadContent />
+        <link rel="canonical" href={absoluteUrl(pathname === "/" ? "/" : pathname.replace(/\/+$/, ""))} />
       </head>
       <body>
         <a
@@ -220,7 +204,6 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  useCanonicalLink();
 
   return (
     <QueryClientProvider client={queryClient}>

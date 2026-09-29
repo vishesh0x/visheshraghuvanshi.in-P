@@ -301,7 +301,8 @@ export const getLegalPage = createServerFn({ method: "GET" })
         .bind(data.pageKey)
         .first<{ page_key: string; title: string; body_html: string }>();
       if (!row) return FALLBACK_LEGAL[data.pageKey];
-      return { page_key: data.pageKey, title: row.title, body_html: row.body_html };
+      const { sanitizeRichHtml } = await import("@/lib/security.server");
+      return { page_key: data.pageKey, title: row.title, body_html: sanitizeRichHtml(row.body_html) };
     } catch (err) {
       console.warn("[getLegalPage] D1 query failed, using fallback:", err);
       return FALLBACK_LEGAL[data.pageKey];
@@ -314,7 +315,9 @@ export const listProjects = createServerFn({ method: "GET" }).handler(
       const db = await getDb();
       const { results } = await db
         .prepare(
-          "SELECT * FROM projects WHERE published = 1 ORDER BY sort_order ASC, year DESC",
+          `SELECT id, slug, title, summary, '' AS body, cover_url, tags_json, live_url, source_url,
+                  year, featured, published, sort_order, meta_title, meta_description, created_at, updated_at
+           FROM projects WHERE published = 1 ORDER BY sort_order ASC, year DESC`,
         )
         .all<D1ProjectRow>();
       return (results || []).map(mapProject);
@@ -333,7 +336,11 @@ export const getProjectBySlug = createServerFn({ method: "GET" })
         .prepare("SELECT * FROM projects WHERE slug = ? AND published = 1 LIMIT 1")
         .bind(data.slug)
         .first<D1ProjectRow>();
-      return row ? mapProject(row) : null;
+      if (!row) return null;
+      // Defence in depth: sanitize on read too, so rows written before the
+      // write-time sanitizer existed can't inject script into the page.
+      const { sanitizeRichHtml } = await import("@/lib/security.server");
+      return mapProject({ ...row, body: sanitizeRichHtml(row.body) });
     } catch {
       return null;
     }
@@ -405,8 +412,23 @@ export const trackPageview = createServerFn({ method: "POST" })
   }))
   .handler(async ({ data }) => {
     try {
+      // This endpoint is unauthenticated, so treat every field as hostile:
+      // only real-looking site paths are recorded, and the referrer is reduced
+      // to its origin (no query strings / tokens) or dropped.
+      if (!/^\/[A-Za-z0-9\-._~!$&'()*+,;=:@%/]*$/.test(data.path)) return { ok: true };
+      let referrer: string | null = null;
+      if (data.referrer) {
+        try {
+          const url = new URL(data.referrer);
+          if (url.protocol === "http:" || url.protocol === "https:") referrer = url.origin;
+        } catch {
+          referrer = null;
+        }
+      }
+
       const db = await getDb();
       const { getRequest } = await import("@tanstack/react-start/server");
+      const { keyedHash } = await import("@/lib/security.server");
       const request = getRequest();
       const headers = request?.headers;
       const ip = headers?.get("cf-connecting-ip") ?? headers?.get("x-forwarded-for") ?? "unknown";
@@ -414,20 +436,14 @@ export const trackPageview = createServerFn({ method: "POST" })
       const country = headers?.get("cf-ipcountry") ?? null;
       const day = new Date().toISOString().slice(0, 10);
 
-      const raw = new TextEncoder().encode(`${ip}|${ua}|${day}|portfolio-os`);
-      const digest = await crypto.subtle.digest("SHA-256", raw);
-      const visitorKey = Array.from(new Uint8Array(digest))
-        .slice(0, 16)
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("");
-
+      const visitorKey = await keyedHash("visitor", ip, ua, day);
       const id = crypto.randomUUID();
 
       await db
         .prepare(
           "INSERT INTO pageviews (id, path, referrer, country, visitor_key, created_at) VALUES (?, ?, ?, ?, ?, datetime('now'))",
         )
-        .bind(id, data.path, data.referrer || null, country && country !== "XX" ? country : null, visitorKey)
+        .bind(id, data.path, referrer, country && country !== "XX" ? country : null, visitorKey)
         .run();
     } catch {
       // Analytics must never break a page render.
