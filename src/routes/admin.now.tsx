@@ -289,7 +289,7 @@ function NowAdminPage() {
                 {(handleProps) => (
                   <div className="flex items-center gap-3 bg-card px-3 py-3.5">
                     <DragHandle {...handleProps} />
-                    <span className="label-mono w-24 shrink-0 text-signal">{item.category}</span>
+                    <span className="label-mono w-24 shrink-0 text-signal-text">{item.category}</span>
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-mono text-sm text-foreground">{item.title}</p>
                       <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">

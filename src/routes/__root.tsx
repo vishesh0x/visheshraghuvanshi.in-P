@@ -14,7 +14,14 @@ import appCss from "../styles.css?url";
 import { Toaster } from "../components/ui/sonner";
 import { CookieNotice } from "../components/site/cookie-notice";
 import { siteConfigQuery } from "../lib/cms/queries";
-import { reportLovableError } from "../lib/lovable-error-reporting";
+// Self-hosted (latin subset) instead of Google Fonts: no third-party request
+// leaking visitor IPs, no render-blocking cross-origin CSS, tighter CSP.
+import "@fontsource/ibm-plex-sans/latin-400.css";
+import "@fontsource/ibm-plex-sans/latin-500.css";
+import "@fontsource/ibm-plex-sans/latin-600.css";
+import "@fontsource/jetbrains-mono/latin-400.css";
+import "@fontsource/jetbrains-mono/latin-500.css";
+import "@fontsource/jetbrains-mono/latin-700.css";
 import { absoluteUrl } from "../lib/site-url";
 
 function NotFoundComponent() {
@@ -44,7 +51,7 @@ function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
-        <p className="label-mono text-signal">Error / 404</p>
+        <p className="label-mono text-signal-text">Error / 404</p>
         <h1 className="mt-4 text-7xl font-bold text-foreground">404</h1>
         <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
         <p className="mt-2 text-sm text-muted-foreground">
@@ -78,9 +85,6 @@ function NotFoundComponent() {
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
-  useEffect(() => {
-    reportLovableError(error, { boundary: "tanstack_root_error_component" });
-  }, [error]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -132,7 +136,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         { property: "og:image:height", content: "630" },
         { name: "twitter:card", content: "summary_large_image" },
         { name: "twitter:image", content: absoluteUrl("/og-default.png") },
-        { name: "theme-color", content: "#141414" },
+        { name: "theme-color", content: "#14171F" },
         ...(config
           ? [
               { title: config.site_title },
@@ -142,12 +146,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           : []),
       ],
       links: [
-        { rel: "preconnect", href: "https://fonts.googleapis.com" },
-        { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-        {
-          rel: "stylesheet",
-          href: "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap",
-        },
         {
           rel: "stylesheet",
           href: appCss,

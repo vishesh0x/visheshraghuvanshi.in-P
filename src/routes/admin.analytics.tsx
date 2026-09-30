@@ -122,7 +122,7 @@ function AnalyticsPage() {
                 {table.rows.map(([label, value]) => (
                   <div key={label} className="flex items-center justify-between gap-4 px-4 py-3">
                     <span className="truncate font-mono text-xs text-foreground">{label}</span>
-                    <span className="label-mono text-signal">{value}</span>
+                    <span className="label-mono text-signal-text">{value}</span>
                   </div>
                 ))}
               </div>

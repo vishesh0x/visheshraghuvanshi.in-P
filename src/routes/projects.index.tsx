@@ -94,7 +94,7 @@ function ProjectsPage() {
                 className="group flex flex-col border border-border bg-background transition-colors hover:bg-accent"
               >
                 <div className="flex items-center justify-between border-b border-border px-4 py-3">
-                  <span className="label-mono text-signal">
+                  <span className="label-mono text-signal-text">
                     {String(index + 1).padStart(3, "0")}
                   </span>
                   <span className="label-mono text-muted-foreground">{project.year}</span>

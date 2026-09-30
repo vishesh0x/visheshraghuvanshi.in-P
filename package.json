@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "d1:setup": "wrangler d1 execute portfolio_db --local --file=./d1-schema.sql",
     "d1:reset:remote": "echo 'REFUSING: this drops ALL production tables. Run the wrangler command from the README by hand if you really mean it.' && exit 1",
-    "d1:migrate:remote": "wrangler d1 execute portfolio_db --remote --file=./d1-migration-005-now-media.sql",
+    "d1:migrate:remote": "wrangler d1 execute portfolio_db --remote --file=./d1-migration-005-now-media.sql && wrangler d1 execute portfolio_db --remote --file=./d1-migration-006-auth-hardening.sql",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
@@ -18,6 +18,8 @@
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
+    "@fontsource/ibm-plex-sans": "^5.3.0",
+    "@fontsource/jetbrains-mono": "^5.3.0",
     "@radix-ui/react-accordion": "^1.2.12",
     "@tanstack/react-query": "^5.101.1",
     "@tanstack/react-router": "^1.170.27",

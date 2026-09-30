@@ -190,7 +190,7 @@ function ContactPage() {
         <div>
           {sent ? (
             <div className="border border-border p-8" role="status" aria-live="polite">
-              <p className="label-mono text-signal">Transmission complete</p>
+              <p className="label-mono text-signal-text">Transmission complete</p>
               <h2 className="mt-4 font-mono text-xl text-foreground">Message received</h2>
               <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
                 Thanks - it's queued in the inbox and I'll reply from {config.contact_email}.

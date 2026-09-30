@@ -235,6 +235,7 @@ CREATE TABLE admin_users (
   id TEXT PRIMARY KEY,
   email TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
+  session_version INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -244,9 +245,11 @@ CREATE TABLE login_attempts (
   id TEXT PRIMARY KEY,
   email TEXT NOT NULL,
   success INTEGER NOT NULL DEFAULT 0,
+  ip_hash TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX idx_login_attempts_email_time ON login_attempts (email, created_at);
+CREATE INDEX idx_login_attempts_ip_time ON login_attempts (ip_hash, created_at);
 
 -- ============ Seed Initial Data ============
 INSERT INTO site_config (id, owner_name, initials, system_name, hero_line_one, hero_line_two, bio, status, location, contact_email, build_version, socials_json, meta_description, site_title, now_categories_json)

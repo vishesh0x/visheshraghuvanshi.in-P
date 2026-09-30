@@ -53,7 +53,7 @@ function ProjectMissing() {
   return (
     <div className="flex min-h-screen items-center justify-center px-6 text-center">
       <div>
-        <p className="label-mono text-signal">404 / record not found</p>
+        <p className="label-mono text-signal-text">404 / record not found</p>
         <h1 className="mt-4 font-mono text-2xl text-foreground">This project isn't published</h1>
         <Link to="/projects" className="label-mono mt-6 inline-block border-b border-signal pb-1">
           Back to index
@@ -101,7 +101,7 @@ function ProjectDetail() {
             ]}
           />
           <div className="mt-8 flex flex-wrap items-baseline gap-4">
-            <span className="label-mono text-signal">{project.year}</span>
+            <span className="label-mono text-signal-text">{project.year}</span>
             <h1 className="font-mono text-3xl leading-tight tracking-tight text-foreground sm:text-5xl">
               {project.title}
             </h1>
@@ -165,7 +165,7 @@ function ProjectDetail() {
                 href={project.live_url}
                 target="_blank"
                 rel="noreferrer noopener"
-                className="label-mono block px-4 py-3 text-foreground hover:text-signal"
+                className="label-mono block px-4 py-3 text-foreground hover:text-signal-text"
               >
                 Live build ↗
               </a>
@@ -175,7 +175,7 @@ function ProjectDetail() {
                 href={project.source_url}
                 target="_blank"
                 rel="noreferrer noopener"
-                className="label-mono block px-4 py-3 text-foreground hover:text-signal"
+                className="label-mono block px-4 py-3 text-foreground hover:text-signal-text"
               >
                 Source ↗
               </a>

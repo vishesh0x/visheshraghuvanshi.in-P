@@ -23,11 +23,14 @@ export const Route = createFileRoute("/api/manifest")({
         }
 
         const icons = faviconUrl
-          ? [{ src: faviconUrl, sizes: "512x512", type: "image/png" }]
+          ? [{ src: faviconUrl, sizes: "512x512", type: "image/png", purpose: "any" }]
           : [
-              { src: "/favicon-32.png", sizes: "32x32", type: "image/png" },
-              { src: "/icon-192.png", sizes: "192x192", type: "image/png" },
-              { src: "/icon-512.png", sizes: "512x512", type: "image/png" },
+              { src: "/favicon-32.png", sizes: "32x32", type: "image/png", purpose: "any" },
+              { src: "/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+              { src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+              // Full-bleed artwork inside the 80% safe zone, so Android's adaptive
+              // icon masks (circle, squircle...) never clip the monogram.
+              { src: "/maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
             ];
 
         const manifest = {
@@ -36,8 +39,8 @@ export const Route = createFileRoute("/api/manifest")({
           description: "A self-hosted portfolio and content management system.",
           start_url: "/",
           display: "standalone",
-          background_color: "#fafaf9",
-          theme_color: "#141414",
+          background_color: "#14171F",
+          theme_color: "#14171F",
           icons,
         };
 

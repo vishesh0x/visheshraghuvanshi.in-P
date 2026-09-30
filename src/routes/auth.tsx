@@ -134,7 +134,7 @@ function AuthPage() {
           <button
             type="button"
             onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
-            className="label-mono mt-4 w-full py-2 text-muted-foreground hover:text-signal"
+            className="label-mono mt-4 w-full py-2 text-muted-foreground hover:text-signal-text"
           >
             {mode === "signin" ? "Need an account? Register" : "Have an account? Sign in"}
           </button>

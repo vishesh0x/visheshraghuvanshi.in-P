@@ -34,6 +34,18 @@ export const Route = createFileRoute("/api/public/contact")({
 
         const env = getCloudflareEnv();
         const turnstileSecret = env["TURNSTILE_SECRET_KEY"] || process.env["TURNSTILE_SECRET_KEY"];
+        // The widget is rendered whenever VITE_TURNSTILE_SITE_KEY was set at build
+        // time. If that is the case but the server has no secret, verification
+        // used to be skipped silently - a bot-protection setting that fails open
+        // is not protection. In production that now refuses the request instead.
+        const siteKeyConfigured = Boolean(import.meta.env["VITE_TURNSTILE_SITE_KEY"]);
+        if (!turnstileSecret && siteKeyConfigured && import.meta.env.PROD) {
+          console.error("[contact] Turnstile site key is set but TURNSTILE_SECRET_KEY is missing");
+          return Response.json(
+            { ok: false, error: "Spam protection is misconfigured. Please email me directly." },
+            { status: 503 },
+          );
+        }
         if (turnstileSecret) {
           const verify = await fetch(
             "https://challenges.cloudflare.com/turnstile/v0/siteverify",

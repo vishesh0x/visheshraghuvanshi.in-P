@@ -43,7 +43,7 @@ function OverviewPage() {
         <section>
           <div className="flex items-baseline justify-between border-b border-border pb-3">
             <h2 className="label-mono text-foreground">Recent messages</h2>
-            <Link to="/admin/inbox" className="label-mono text-muted-foreground hover:text-signal">
+            <Link to="/admin/inbox" className="label-mono text-muted-foreground hover:text-signal-text">
               Open inbox →
             </Link>
           </div>
@@ -56,7 +56,7 @@ function OverviewPage() {
                     {new Date(message.created_at).toISOString().slice(0, 10)}
                   </span>
                 </div>
-                <p className="label-mono mt-2 text-signal">
+                <p className="label-mono mt-2 text-signal-text">
                   {message.name} · {message.email}
                 </p>
                 <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{message.message}</p>

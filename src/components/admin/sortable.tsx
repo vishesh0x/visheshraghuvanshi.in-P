@@ -74,7 +74,7 @@ export function DragHandle(props: Record<string, unknown>) {
       type="button"
       aria-label="Reorder"
       {...props}
-      className="label-mono cursor-grab px-2.5 py-2 text-muted-foreground hover:text-signal active:cursor-grabbing"
+      className="label-mono cursor-grab px-2.5 py-2 text-muted-foreground hover:text-signal-text active:cursor-grabbing"
     >
       ⠿
     </button>

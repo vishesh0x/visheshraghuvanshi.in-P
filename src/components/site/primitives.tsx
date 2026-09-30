@@ -19,7 +19,7 @@ export function SectionHeader({
   return (
     <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-border pb-4">
       <div className="flex items-baseline gap-4">
-        <span className="label-mono text-signal">{index}</span>
+        <span className="label-mono text-signal-text">{index}</span>
         <h2 className="font-mono text-lg tracking-tight text-foreground sm:text-xl">{title}</h2>
       </div>
       {meta ? <span className="label-mono text-muted-foreground">{meta}</span> : null}
@@ -50,7 +50,7 @@ export function PageHeader({
     <div className="border-b border-border">
       <Container className="py-14 sm:py-20">
         {crumbs ? <Breadcrumbs items={crumbs} /> : null}
-        <p className="label-mono text-signal">{eyebrow}</p>
+        <p className="label-mono text-signal-text">{eyebrow}</p>
         <h1 className="mt-5 max-w-3xl font-mono text-3xl leading-tight tracking-tight text-foreground sm:text-5xl">
           {title}
         </h1>

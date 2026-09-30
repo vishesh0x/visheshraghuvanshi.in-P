@@ -38,6 +38,10 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-signal: var(--signal);
   --color-signal-foreground: var(--signal-foreground);
+  /* Text-safe accent: --color-signal is 3.5:1 on paper (fails WCAG AA for small
+     text); this is 5.0:1 on the page and 4.6:1 on muted panels. Use it for TEXT,
+     keep --color-signal for fills, borders and large marks. */
+  --color-signal-text: var(--signal-text);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
@@ -77,6 +81,7 @@
   --accent: oklch(0.94 0.006 90);
   --accent-foreground: oklch(0.19 0.004 60);
   --signal: oklch(0.638 0.204 37);
+  --signal-text: oklch(0.55 0.19 37);
   --signal-foreground: oklch(0.99 0.003 95);
   --destructive: oklch(0.55 0.2 27);
   --destructive-foreground: oklch(0.99 0.003 95);
@@ -115,6 +120,7 @@
   --accent: oklch(0.29 0.005 60);
   --accent-foreground: oklch(0.955 0.003 95);
   --signal: oklch(0.68 0.19 38);
+  --signal-text: oklch(0.72 0.17 38);
   --signal-foreground: oklch(0.15 0.004 60);
   --destructive: oklch(0.65 0.19 25);
   --destructive-foreground: oklch(0.99 0.003 95);
@@ -196,7 +202,7 @@
     color: color-mix(in oklab, var(--color-foreground) 88%, transparent);
   }
   & a {
-    color: var(--color-signal);
+    color: var(--color-signal-text);
     text-underline-offset: 3px;
     text-decoration: underline;
   }
@@ -213,7 +219,7 @@
     content: "-";
     position: absolute;
     left: 0;
-    color: var(--color-signal);
+    color: var(--color-signal-text);
   }
   & ol {
     list-style: decimal;

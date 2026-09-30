@@ -51,7 +51,7 @@ function NowPage() {
               return (
                 <section key={category}>
                   <div className="flex items-baseline justify-between border-b border-border pb-3">
-                    <h2 className="label-mono text-signal">{category}</h2>
+                    <h2 className="label-mono text-signal-text">{category}</h2>
                     <span className="label-mono text-muted-foreground">
                       {String(group.length).padStart(2, "0")}
                     </span>
@@ -80,7 +80,7 @@ function NowPage() {
                               href={item.link_url}
                               target="_blank"
                               rel="noreferrer noopener"
-                              className="label-mono mt-4 inline-block text-signal hover:underline"
+                              className="label-mono mt-4 inline-block text-signal-text hover:underline"
                             >
                               Open link ↗
                             </a>

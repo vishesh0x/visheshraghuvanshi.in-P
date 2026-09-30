@@ -96,7 +96,7 @@ function InboxPage() {
 
                 {open ? (
                   <div className="border-t border-border px-4 py-4">
-                    <p className="label-mono text-signal">{message.email}</p>
+                    <p className="label-mono text-signal-text">{message.email}</p>
                     {message.country ? (
                       <p className="label-mono mt-1 text-muted-foreground">
                         Origin {message.country}

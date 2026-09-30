@@ -146,7 +146,7 @@ function HomePage() {
                 className="group flex flex-col border border-border bg-background transition-colors hover:bg-accent"
               >
                 <div className="flex items-center justify-between border-b border-border px-4 py-3">
-                  <span className="label-mono text-signal">
+                  <span className="label-mono text-signal-text">
                     {String(index + 1).padStart(2, "0")}
                   </span>
                   <span className="label-mono text-muted-foreground">{project.year}</span>
@@ -195,7 +195,7 @@ function HomePage() {
           <div className="mt-px grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-4">
             {nowItems.slice(0, 6).map((item) => (
               <article key={item.id} className="border border-border bg-background p-5">
-                <p className="label-mono text-signal">{item.category}</p>
+                <p className="label-mono text-signal-text">{item.category}</p>
                 <h3 className="mt-3 text-base font-medium text-foreground">{item.title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                   {item.description}

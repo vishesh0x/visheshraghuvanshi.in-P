@@ -76,7 +76,7 @@ function ResumePage() {
           {sections.map((section, sectionIndex) => (
             <section key={section.id}>
               <div className="flex items-baseline gap-4 border-b border-border pb-3">
-                <span className="label-mono text-signal">
+                <span className="label-mono text-signal-text">
                   {String(sectionIndex + 1).padStart(2, "0")}
                 </span>
                 <h2 className="font-mono text-lg tracking-tight text-foreground">
@@ -113,7 +113,7 @@ function ResumePage() {
                       <div>
                         <h3 className="text-base font-semibold text-foreground">{entry.role}</h3>
                         {entry.organization ? (
-                          <p className="label-mono mt-1.5 text-signal">{entry.organization}</p>
+                          <p className="label-mono mt-1.5 text-signal-text">{entry.organization}</p>
                         ) : null}
                         {entry.description ? (
                           <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
@@ -127,7 +127,7 @@ function ResumePage() {
                                 key={index}
                                 className="relative pl-5 text-sm leading-relaxed text-muted-foreground"
                               >
-                                <span className="absolute left-0 text-signal">-</span>
+                                <span className="absolute left-0 text-signal-text">-</span>
                                 {bullet}
                               </li>
                             ))}

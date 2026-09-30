@@ -103,11 +103,11 @@ function AdminLayout() {
             <p className="mt-2 break-all font-mono text-[11px] text-foreground">
               {session.data?.email ?? "admin@local"}
             </p>
-            <p className="label-mono mt-2 text-signal">
+            <p className="label-mono mt-2 text-signal-text">
               {session.data?.isAdmin ? "Admin" : session.isLoading ? "…" : "Read-only"}
             </p>
             <div className="mt-4 flex flex-col gap-2">
-              <Link to="/" className="label-mono text-muted-foreground hover:text-signal">
+              <Link to="/" className="label-mono text-muted-foreground hover:text-signal-text">
                 ← Public site
               </Link>
               <button

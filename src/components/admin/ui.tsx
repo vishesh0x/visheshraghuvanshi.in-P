@@ -115,7 +115,7 @@ export function StatCard({
     <div className="bg-background p-5">
       <p className="label-mono text-muted-foreground">{label}</p>
       <p className="mt-3 font-mono text-3xl tracking-tight text-foreground">{value}</p>
-      {meta ? <p className="label-mono mt-2 text-signal">{meta}</p> : null}
+      {meta ? <p className="label-mono mt-2 text-signal-text">{meta}</p> : null}
     </div>
   );
 }

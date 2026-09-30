@@ -1,3 +1,4 @@
+import { LogoMark } from "@/components/site/logo-mark";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 
@@ -66,9 +67,7 @@ export function SiteShell({ config, children }: { config: SiteConfig; children: 
       <header className="sticky top-0 z-40 border-b border-border bg-background/92 backdrop-blur-sm">
         <div className="mx-auto flex h-14 max-w-[1400px] items-center justify-between px-4 sm:px-6">
           <Link to="/" className="group flex items-center gap-3">
-            <span className="flex h-7 w-7 items-center justify-center bg-foreground font-mono text-[11px] font-bold text-background">
-              {config.initials.slice(0, 2)}
-            </span>
+            <LogoMark size="small" className="h-6 w-auto shrink-0 text-foreground" />
             <span className="label-mono hidden text-foreground sm:inline">{config.system_name}</span>
           </Link>
 
@@ -154,7 +153,7 @@ export function SiteShell({ config, children }: { config: SiteConfig; children: 
                     href={social.url}
                     target="_blank"
                     rel="noreferrer noopener"
-                    className="text-sm text-foreground hover:text-signal"
+                    className="text-sm text-foreground hover:text-signal-text"
                   >
                     {social.label}
                   </a>
@@ -168,9 +167,6 @@ export function SiteShell({ config, children }: { config: SiteConfig; children: 
           <div className="bg-background p-6">
             <p className="label-mono text-muted-foreground">Build</p>
             <p className="mt-3 font-mono text-sm text-foreground">v{config.build_version}</p>
-            <Link to="/admin" className="label-mono mt-3 inline-block text-muted-foreground hover:text-signal">
-              Control dashboard →
-            </Link>
           </div>
         </div>
         <div className="border-t border-border">
@@ -181,19 +177,19 @@ export function SiteShell({ config, children }: { config: SiteConfig; children: 
             <nav aria-label="Legal" className="flex flex-wrap items-center gap-4">
               <Link
                 to="/faq"
-                className="label-mono text-muted-foreground hover:text-signal"
+                className="label-mono text-muted-foreground hover:text-signal-text"
               >
                 FAQ
               </Link>
               <Link
                 to="/privacy"
-                className="label-mono text-muted-foreground hover:text-signal"
+                className="label-mono text-muted-foreground hover:text-signal-text"
               >
                 Privacy
               </Link>
               <Link
                 to="/terms"
-                className="label-mono text-muted-foreground hover:text-signal"
+                className="label-mono text-muted-foreground hover:text-signal-text"
               >
                 Terms
               </Link>
